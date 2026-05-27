@@ -1,11 +1,13 @@
 # Forum 论坛系统 — 学习教程
 
-> 从零到一，手把手带你理解 FastAPI + SQLAlchemy 全栈论坛后端
+> 从零到一，手把手带你理解 FastAPI + Vue 3 全栈论坛
 
 ## 目录
 
+### 后端篇
+
 | 章节 | 主题 | 文件 |
-|------|------|------|
+|:----:|------|------|
 | 01 | 项目初始化 — 搭建骨架 | [ch01-项目初始化.md](ch01-项目初始化.md) |
 | 02 | 数据库设计 — models.py | [ch02-数据库设计.md](ch02-数据库设计.md) |
 | 03 | 数据校验 — schemas.py | [ch03-数据校验.md](ch03-数据校验.md) |
@@ -18,32 +20,54 @@
 | 10 | 前端如何调用 API | [ch10-前后端对接.md](ch10-前后端对接.md) |
 | 11 | 完整开发流程总结 | [ch11-总结.md](ch11-总结.md) |
 
+### 前端篇
+
+| 章节 | 主题 | 文件 |
+|:----:|------|------|
+| 12 | 前端项目概览 — 入口与架构 | [ch12-前端项目概览.md](ch12-前端项目概览.md) |
+| 13 | 路由与认证状态 | [ch13-路由与认证状态.md](ch13-路由与认证状态.md) |
+| 14 | 全局组件与 Composable 模式 | [ch14-全局组件与Composable模式.md](ch14-全局组件与Composable模式.md) |
+| 15 | 核心视图详解 | [ch15-核心视图详解.md](ch15-核心视图详解.md) |
+| 16 | 认证与用户页面 | [ch16-认证与用户页面.md](ch16-认证与用户页面.md) |
+| 17 | 评论与通知系统 | [ch17-评论与通知系统.md](ch17-评论与通知系统.md) |
+
 ## 项目结构
 
 ```
 forum-project/
-├── backend/
-│   ├── main.py         # 入口（路由、中间件）
-│   ├── models.py       # 数据库表结构
-│   ├── schemas.py      # 请求/响应数据格式
-│   ├── crud.py         # 数据库操作
-│   ├── auth.py         # 密码加密 + JWT
-│   ├── database.py     # 数据库连接
-│   ├── seed.py         # 测试数据
-│   ├── Dockerfile      # 容器部署
-│   └── migrations/     # 迁移记录
-└── frontend/           # Vue 3 前端
+├── backend/                    # FastAPI 后端
+│   ├── main.py                 # 入口（路由、中间件、错误处理）
+│   ├── models.py               # 数据库表结构
+│   ├── schemas.py              # 请求/响应数据格式
+│   ├── crud.py                 # 数据库操作
+│   ├── auth.py                 # 密码加密 + JWT
+│   ├── database.py             # 数据库连接
+│   ├── seed.py                 # 测试数据
+│   ├── Dockerfile              # 容器部署
+│   └── migrations/             # 迁移记录
+├── frontend/                   # Vue 3 前端
+│   └── src/
+│       ├── main.js             # 应用入口
+│       ├── App.vue             # 根组件（导航栏、全局组件）
+│       ├── style.css           # 样式 + 主题变量
+│       ├── router/index.js     # 10 条路由 + 导航守卫
+│       ├── stores/auth.js      # Pinia 认证状态
+│       ├── api/                # Axios API 调用层
+│       ├── components/         # 全局组件
+│       ├── composables/        # 可复用逻辑
+│       └── views/              # 页面组件
+└── ebook/                      # ← 本教程
 ```
 
-## 后端代码量
+## 代码量统计
 
-| 文件 | 行数 | 职责 |
-|------|------|------|
-| main.py | ~260 | 路由、中间件、错误处理 |
-| crud.py | ~215 | 数据库操作 |
-| schemas.py | ~105 | Pydantic 模型 |
-| models.py | ~65 | ORM 表定义 |
-| auth.py | ~55 | 密码 + JWT |
-| database.py | ~40 | 数据库连接 |
-| seed.py | ~25 | 测试数据 |
-| **总计** | **~770** | 完整论坛后端 |
+| 后端 | 行数 | 前端 | 行数 |
+|:-----|:---:|:-----|:---:|
+| main.py | ~260 | 视图 (9个) | ~1,592 |
+| crud.py | ~215 | App.vue | ~390 |
+| schemas.py | ~105 | 组件 (4个) | ~398 |
+| models.py | ~65 | router + store | ~138 |
+| auth.py | ~55 | api (7个) | ~126 |
+| database.py | ~40 | composables (2个) | ~46 |
+| seed.py | ~25 | main.js + style.css | ~101 |
+| **后端总计** | **~770** | **前端总计** | **~2,791** |
