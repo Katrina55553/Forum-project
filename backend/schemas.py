@@ -47,16 +47,28 @@ class PasswordChange(BaseModel):
     new_password: str
 
 
+# ── Tag ──
+
+class TagResponse(BaseModel):
+    id: int
+    name: str
+    slug: str
+
+    model_config = {"from_attributes": True}
+
+
 # ── Topic ──
 
 class TopicCreate(BaseModel):
     title: str
     content: str = ""
+    tags: list[str] = []
 
 
 class TopicUpdate(BaseModel):
     title: str | None = None
     content: str | None = None
+    tags: list[str] | None = None
 
 
 # ── Comment ──
@@ -104,6 +116,7 @@ class TopicListResponse(BaseModel):
     likes_count: int = 0
     last_comment_at: datetime | None = None
     created_at: datetime
+    tags: list[TagResponse] = []
 
     model_config = {"from_attributes": True}
 
@@ -119,6 +132,7 @@ class TopicDetailResponse(BaseModel):
     likes_count: int = 0
     is_liked: bool = False
     comments: list[CommentResponse] = []
+    tags: list[TagResponse] = []
 
     model_config = {"from_attributes": True}
 

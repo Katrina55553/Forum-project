@@ -2,7 +2,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from auth import hash_password
-from models import Comment, Notification, Topic, User, likes
+from models import Comment, Notification, Tag, Topic, User, likes, topic_tags
 
 
 # ── User ──
@@ -33,21 +33,55 @@ def change_password(db: Session, user: User, new_password: str) -> None:
     db.commit()
 
 
+# ── Tag ──
+
+def get_or_create_tags(db: Session, tag_names: list[str]) -> list[Tag]:
+    """获取或创建标签，返回 Tag 对象列表"""
+    tags = []
+    for name in tag_names:
+        name = name.strip()
+        if not name:
+            continue
+        slug = name.lower().replace(" ", "-")
+        tag = db.query(Tag).filter_by(slug=slug).first()
+        if not tag:
+            tag = Tag(name=name, slug=slug)
+            db.add(tag)
+            db.flush()
+        tags.append(tag)
+    return tags
+
+
+def get_all_tags(db: Session) -> list[dict]:
+    """获取所有标签及其帖子数量"""
+    tags = db.query(Tag).all()
+    result = []
+    for tag in tags:
+        count = db.query(func.count(topic_tags.c.topic_id)).filter(topic_tags.c.tag_id == tag.id).scalar()
+        result.append({"id": tag.id, "name": tag.name, "slug": tag.slug, "count": count})
+    return sorted(result, key=lambda x: x["count"], reverse=True)
+
+
 # ── Topic ──
 
-def create_topic(db: Session, author_id: int, title: str, content: str) -> Topic:
+def create_topic(db: Session, author_id: int, title: str, content: str, tag_names: list[str] = None) -> Topic:
     topic = Topic(title=title, content=content, author_id=author_id)
     db.add(topic)
+    if tag_names:
+        tags = get_or_create_tags(db, tag_names)
+        topic.tags = tags
     db.query(User).filter_by(id=author_id).update({"topic_count": User.topic_count + 1})
     db.commit()
     db.refresh(topic)
     return topic
 
 
-def get_topics(db: Session, page: int = 1, size: int = 10, q: str = ""):
-    query = db.query(Topic).options(joinedload(Topic.author))
+def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str = ""):
+    query = db.query(Topic).options(joinedload(Topic.author), joinedload(Topic.tags))
     if q:
         query = query.filter(or_(Topic.title.ilike(f"%{q}%"), Topic.content.ilike(f"%{q}%")))
+    if tag:
+        query = query.filter(Topic.tags.any(Tag.slug == tag))
     total = query.count()
     topics = (
         query.order_by(Topic.created_at.desc())
@@ -70,6 +104,7 @@ def get_topics(db: Session, page: int = 1, size: int = 10, q: str = ""):
             "comment_count": comment_count,
             "likes_count": like_count,
             "last_comment_at": last_comment.created_at if last_comment else None,
+            "tags": [{"id": tag.id, "name": tag.name, "slug": tag.slug} for tag in t.tags],
             "created_at": t.created_at,
         })
     return result, total
@@ -82,6 +117,7 @@ def get_topic_by_id(db: Session, topic_id: int) -> Topic | None:
             joinedload(Topic.author),
             joinedload(Topic.comments).joinedload(Comment.author),
             joinedload(Topic.likes),
+            joinedload(Topic.tags),
         )
         .filter_by(id=topic_id)
         .first()
@@ -122,6 +158,9 @@ def update_topic(db: Session, topic: Topic, data: dict) -> Topic:
     for field in ("title", "content"):
         if data.get(field) is not None:
             setattr(topic, field, data[field])
+    if "tags" in data and data["tags"] is not None:
+        tags = get_or_create_tags(db, data["tags"])
+        topic.tags = tags
     db.commit()
     db.refresh(topic)
     return topic

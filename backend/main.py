@@ -25,6 +25,7 @@ from crud import (
     create_user,
     delete_comment,
     delete_topic,
+    get_all_tags,
     get_comment_by_id,
     get_notifications,
     get_topic_by_id,
@@ -221,11 +222,18 @@ def update_password(data: PasswordChange, current_user: User = Depends(get_curre
     return {"message": "密码已更新"}
 
 
+# ── Tag routes ──
+
+@app.get("/api/tags")
+def list_tags(db: Session = Depends(get_db)):
+    return get_all_tags(db)
+
+
 # ── Topic routes ──
 
 @app.get("/api/topics")
-def list_topics(page: int = 1, size: int = 10, q: str = "", db: Session = Depends(get_db)):
-    items, total = get_topics(db, page=page, size=size, q=q)
+def list_topics(page: int = 1, size: int = 10, q: str = "", tag: str = "", db: Session = Depends(get_db)):
+    items, total = get_topics(db, page=page, size=size, q=q, tag=tag)
     return {
         "items": items,
         "total": total,
@@ -253,13 +261,14 @@ def detail_topic(topic_id: int, db: Session = Depends(get_db), current_user: Use
         "likes_count": len(topic.likes),
         "is_liked": is_liked,
         "comments": build_comment_tree(topic.comments),
+        "tags": [{"id": tag.id, "name": tag.name, "slug": tag.slug} for tag in topic.tags],
     }
 
 
 @app.post("/api/topics", response_model=TopicDetailResponse, status_code=201)
 @limiter.limit("10/minute")
 def create_topic_route(request: Request, data: TopicCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return create_topic(db, current_user.id, sanitize(data.title), sanitize(data.content))
+    return create_topic(db, current_user.id, sanitize(data.title), sanitize(data.content), data.tags)
 
 
 @app.get("/api/topics/{topic_id}/edit")

@@ -1,7 +1,7 @@
 import client from "./client";
 
-export function getTopics(page = 1, size = 10, q = "") {
-  return client.get("/topics", { params: { page, size, q } });
+export function getTopics(page = 1, size = 10, q = "", tag = "") {
+  return client.get("/topics", { params: { page, size, q, tag } });
 }
 
 export function getTopicById(id) {

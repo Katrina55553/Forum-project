@@ -144,6 +144,16 @@ onMounted(fetchTopic);
 
     <article v-else>
       <h1>{{ topic.title }}</h1>
+      <div v-if="topic.tags?.length" class="topic-tags">
+        <router-link
+          v-for="tag in topic.tags"
+          :key="tag.id"
+          :to="{ name: 'home', query: { tag: tag.slug } }"
+          class="topic-tag"
+        >
+          {{ tag.name }}
+        </router-link>
+      </div>
       <div class="meta">
         <router-link :to="`/user/${topic.author?.username}`" class="author">{{ topic.author?.username }}</router-link>
         <span>{{ new Date(topic.created_at).toLocaleDateString() }}</span>
@@ -249,6 +259,27 @@ h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--color-text); }
 }
 .author { color: var(--color-text-muted); text-decoration: none; }
 .author:hover { color: var(--color-primary); }
+
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.topic-tag {
+  padding: 0.2rem 0.6rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.topic-tag:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
 .like-btn {
   background: none;
   border: 1px solid var(--color-border);

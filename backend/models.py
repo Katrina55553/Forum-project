@@ -42,6 +42,7 @@ class Topic(Base):
     author = relationship("User", back_populates="topics")
     comments = relationship("Comment", back_populates="topic", cascade="all, delete-orphan")
     likes = relationship("User", secondary="likes")
+    tags = relationship("Tag", secondary="topic_tags")
 
 
 class Comment(Base):
@@ -82,4 +83,22 @@ likes = Table(
     Base.metadata,
     Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("topic_id", Integer, ForeignKey("topics.id"), primary_key=True),
+)
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False, index=True)
+    slug = Column(String, unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+# topic_tags table for Topic.tags relationship
+topic_tags = Table(
+    "topic_tags",
+    Base.metadata,
+    Column("topic_id", Integer, ForeignKey("topics.id"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("tags.id"), primary_key=True),
 )

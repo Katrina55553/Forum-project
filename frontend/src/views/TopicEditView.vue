@@ -2,8 +2,10 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { marked } from "marked";
-import { createTopic, updateTopic, getTopicForEdit } from "../api/topic";
+import { createTopic, updateTopic, getTopicById, getTopicForEdit } from "../api/topic";
+import { getTags } from "../api/tag";
 import { showToast } from "../composables/toast";
+import TagInput from "../components/TagInput.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -11,6 +13,8 @@ const router = useRouter();
 const isEdit = computed(() => !!route.params.id);
 const title = ref("");
 const content = ref("");
+const tags = ref([]);
+const allTags = ref([]);
 const loading = ref(false);
 const pageLoading = ref(false);
 const error = ref("");
@@ -21,12 +25,21 @@ const previewHtml = computed(() => {
 });
 
 async function init() {
+  // 获取热门标签
+  try {
+    const tagsRes = await getTags();
+    allTags.value = tagsRes.data;
+  } catch {
+    // ignore
+  }
+
   if (isEdit.value) {
     pageLoading.value = true;
     try {
-      const res = await getTopicForEdit(route.params.id);
+      const res = await getTopicById(route.params.id);
       title.value = res.data.title;
       content.value = res.data.content;
+      tags.value = res.data.tags?.map(t => t.name) || [];
     } catch {
       error.value = "加载失败";
     } finally {
@@ -43,18 +56,17 @@ async function handleSubmit() {
   loading.value = true;
   error.value = "";
   try {
+    const data = {
+      title: title.value.trim(),
+      content: content.value,
+      tags: tags.value,
+    };
     if (isEdit.value) {
-      const res = await updateTopic(route.params.id, {
-        title: title.value.trim(),
-        content: content.value,
-      });
+      const res = await updateTopic(route.params.id, data);
       router.push(`/topic/${res.data.id}`);
       showToast.success("更新成功");
     } else {
-      const res = await createTopic({
-        title: title.value.trim(),
-        content: content.value,
-      });
+      const res = await createTopic(data);
       router.push(`/topic/${res.data.id}`);
       showToast.success("发帖成功");
     }
@@ -87,6 +99,11 @@ onMounted(init);
           placeholder="输入帖子标题..."
           maxlength="200"
         />
+      </div>
+
+      <div class="field">
+        <label>标签</label>
+        <TagInput v-model="tags" :suggestions="allTags" />
       </div>
 
       <div class="field">

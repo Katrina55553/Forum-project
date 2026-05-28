@@ -2,6 +2,7 @@
 import { ref, onMounted, watch, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getTopics } from "../api/topic";
+import { getTags } from "../api/tag";
 
 const route = useRoute();
 const router = useRouter();
@@ -13,6 +14,8 @@ const page = ref(1);
 const searchInput = ref(route.query.q || "");
 const loading = ref(true);
 const error = ref("");
+const tags = ref([]);
+const currentTag = computed(() => route.query.tag || "");
 
 const q = computed(() => route.query.q || "");
 const size = 10;
@@ -21,7 +24,7 @@ async function fetchTopics() {
   loading.value = true;
   error.value = "";
   try {
-    const res = await getTopics(page.value, size, q.value);
+    const res = await getTopics(page.value, size, q.value, currentTag.value);
     topics.value = res.data.items;
     total.value = res.data.total;
     pages.value = res.data.pages;
@@ -32,6 +35,15 @@ async function fetchTopics() {
   }
 }
 
+async function fetchTags() {
+  try {
+    const res = await getTags();
+    tags.value = res.data;
+  } catch {
+    // ignore
+  }
+}
+
 function goPage(p) {
   page.value = p;
 }
@@ -39,11 +51,21 @@ function goPage(p) {
 function doSearch() {
   const val = searchInput.value.trim();
   page.value = 1;
-  if (val) {
-    router.push({ name: "home", query: { q: val } });
+  const query = {};
+  if (val) query.q = val;
+  if (currentTag.value) query.tag = currentTag.value;
+  router.push({ name: "home", query });
+}
+
+function filterByTag(slug) {
+  page.value = 1;
+  const query = { ...route.query };
+  if (slug === currentTag.value) {
+    delete query.tag;
   } else {
-    router.push({ name: "home" });
+    query.tag = slug;
   }
+  router.push({ name: "home", query });
 }
 
 function formatTime(t) {
@@ -57,9 +79,16 @@ function formatTime(t) {
   return new Date(t).toLocaleDateString();
 }
 
-onMounted(fetchTopics);
+onMounted(() => {
+  fetchTopics();
+  fetchTags();
+});
 watch(page, fetchTopics);
 watch(q, () => {
+  page.value = 1;
+  fetchTopics();
+});
+watch(currentTag, () => {
   page.value = 1;
   fetchTopics();
 });
@@ -71,12 +100,27 @@ watch(q, () => {
       <input v-model="searchInput" type="search" placeholder="搜索帖子..." class="search-input" />
     </form>
 
-    <h1 v-if="q">搜索: "{{ q }}"</h1>
+    <!-- 标签筛选栏 -->
+    <div v-if="tags.length" class="tags-bar">
+      <button
+        v-for="tag in tags"
+        :key="tag.id"
+        class="tag-chip"
+        :class="{ active: currentTag === tag.slug }"
+        @click="filterByTag(tag.slug)"
+      >
+        {{ tag.name }}
+        <span class="tag-count">{{ tag.count }}</span>
+      </button>
+    </div>
+
+    <h1 v-if="currentTag">标签: "{{ tags.find(t => t.slug === currentTag)?.name || currentTag }}"</h1>
+    <h1 v-else-if="q">搜索: "{{ q }}"</h1>
     <h1 v-else>最新帖子</h1>
 
-    <p v-if="q && !loading" class="search-info">
+    <p v-if="(q || currentTag) && !loading" class="search-info">
       找到 {{ total }} 个帖子
-      <router-link to="/" class="btn-clear">清除搜索</router-link>
+      <router-link to="/" class="btn-clear">清除筛选</router-link>
     </p>
 
     <div v-if="loading" class="skeleton-list">
@@ -95,6 +139,16 @@ watch(q, () => {
       <div v-for="t in topics" :key="t.id" class="topic-row">
         <div class="topic-main">
           <router-link :to="`/topic/${t.id}`" class="topic-title">{{ t.title }}</router-link>
+          <div v-if="t.tags?.length" class="topic-tags">
+            <span
+              v-for="tag in t.tags"
+              :key="tag.id"
+              class="topic-tag"
+              @click.prevent="filterByTag(tag.slug)"
+            >
+              {{ tag.name }}
+            </span>
+          </div>
           <div class="topic-meta">
             <router-link :to="`/user/${t.author?.username}`" class="author">{{ t.author?.username }}</router-link>
             <span>{{ formatTime(t.created_at) }}</span>
@@ -121,7 +175,7 @@ watch(q, () => {
 .home { max-width: 700px; margin: 0 auto; }
 h1 { margin-bottom: 0.5rem; color: var(--color-text); }
 
-.search-bar { margin-bottom: 1.5rem; }
+.search-bar { margin-bottom: 1rem; }
 .search-input {
   width: 100%;
   padding: 0.7rem 1rem;
@@ -155,6 +209,60 @@ h1 { margin-bottom: 0.5rem; color: var(--color-text); }
   text-decoration: none;
 }
 .btn-clear:hover { color: var(--color-text); border-color: var(--color-text); }
+
+.tags-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.tag-chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.tag-chip.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.tag-count {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.topic-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+.topic-tag {
+  padding: 0.1rem 0.5rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.topic-tag:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 .state { text-align: center; padding: 2rem; color: var(--color-text-muted); }
 .error { color: var(--color-danger); }
 .btn-retry {
