@@ -4,7 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { marked } from "marked";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
-import { getTopicById, deleteTopic } from "../api/topic";
+import { getTopicById, deleteTopic, pinTopic, featureTopic } from "../api/topic";
 import { createComment } from "../api/comment";
 import { likeTopic, unlikeTopic } from "../api/like";
 import { useAuthStore } from "../stores/auth";
@@ -88,6 +88,26 @@ async function handleDelete() {
   }
 }
 
+async function handlePin() {
+  try {
+    const res = await pinTopic(topic.value.id);
+    topic.value.is_pinned = res.data.is_pinned;
+    showToast.success(res.data.is_pinned ? "已置顶" : "已取消置顶");
+  } catch {
+    showToast.error("操作失败");
+  }
+}
+
+async function handleFeature() {
+  try {
+    const res = await featureTopic(topic.value.id);
+    topic.value.is_featured = res.data.is_featured;
+    showToast.success(res.data.is_featured ? "已设为精华" : "已取消精华");
+  } catch {
+    showToast.error("操作失败");
+  }
+}
+
 async function fetchTopic() {
   loading.value = true;
   error.value = "";
@@ -143,7 +163,13 @@ onMounted(fetchTopic);
     </div>
 
     <article v-else>
-      <h1>{{ topic.title }}</h1>
+      <div class="title-section">
+        <div class="badges">
+          <span v-if="topic.is_pinned" class="badge pin">📌 置顶</span>
+          <span v-if="topic.is_featured" class="badge featured">⭐ 精华</span>
+        </div>
+        <h1>{{ topic.title }}</h1>
+      </div>
       <div v-if="topic.tags?.length" class="topic-tags">
         <router-link
           v-for="tag in topic.tags"
@@ -170,6 +196,14 @@ onMounted(fetchTopic);
       <div v-if="isAuthor || isAdmin" class="author-actions">
         <button class="btn-edit" @click="handleEdit">编辑</button>
         <button class="btn-delete" @click="handleDelete">删除</button>
+        <template v-if="isAdmin">
+          <button class="btn-pin" :class="{ active: topic.is_pinned }" @click="handlePin">
+            {{ topic.is_pinned ? '取消置顶' : '置顶' }}
+          </button>
+          <button class="btn-feature" :class="{ active: topic.is_featured }" @click="handleFeature">
+            {{ topic.is_featured ? '取消精华' : '精华' }}
+          </button>
+        </template>
       </div>
       <div class="content" v-html="renderedContent"></div>
 
@@ -247,7 +281,34 @@ onMounted(fetchTopic);
   100% { opacity: 0.4; }
 }
 
-h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--color-text); }
+.title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.title-section .badges {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.badge {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge.pin {
+  background: var(--color-primary);
+  color: #fff;
+}
+.badge.featured {
+  background: #f59e0b;
+  color: #fff;
+}
+h1 { font-size: 1.8rem; margin-bottom: 0; color: var(--color-text); }
 .meta {
   display: flex;
   gap: 0.8rem;
@@ -310,6 +371,10 @@ h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--color-text); }
 .btn-edit:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .btn-delete { color: var(--color-danger); }
 .btn-delete:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
+.btn-pin { color: var(--color-text-muted); }
+.btn-pin:hover, .btn-pin.active { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-feature { color: var(--color-text-muted); }
+.btn-feature:hover, .btn-feature.active { border-color: #f59e0b; color: #f59e0b; }
 
 .content {
   line-height: 1.8;

@@ -16,7 +16,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
-from auth import create_access_token, get_current_user, get_optional_user, hash_password, verify_password
+from auth import create_access_token, get_current_user, get_optional_user, hash_password, require_admin, verify_password
 from crud import (
     build_comment_tree,
     change_password,
@@ -38,6 +38,8 @@ from crud import (
     like_topic,
     mark_all_notifications_read,
     mark_notification_read,
+    toggle_topic_featured,
+    toggle_topic_pin,
     unlike_topic,
     update_topic,
     update_user,
@@ -262,6 +264,8 @@ def detail_topic(topic_id: int, db: Session = Depends(get_db), current_user: Use
         "is_liked": is_liked,
         "comments": build_comment_tree(topic.comments),
         "tags": [{"id": tag.id, "name": tag.name, "slug": tag.slug} for tag in topic.tags],
+        "is_pinned": topic.is_pinned,
+        "is_featured": topic.is_featured,
     }
 
 
@@ -303,6 +307,22 @@ def delete_topic_route(request: Request, topic_id: int, current_user: User = Dep
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic not found")
     _author_or_admin(topic, current_user)
     delete_topic(db, topic)
+
+
+@app.put("/api/topics/{topic_id}/pin")
+def pin_topic_route(topic_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    topic = get_topic_for_edit(db, topic_id)
+    if not topic:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic not found")
+    return toggle_topic_pin(db, topic)
+
+
+@app.put("/api/topics/{topic_id}/featured")
+def feature_topic_route(topic_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    topic = get_topic_for_edit(db, topic_id)
+    if not topic:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic not found")
+    return toggle_topic_featured(db, topic)
 
 
 # ── User routes ──

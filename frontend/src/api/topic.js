@@ -23,3 +23,11 @@ export function updateTopic(id, data) {
 export function deleteTopic(id) {
   return client.delete(`/topics/${id}`);
 }
+
+export function pinTopic(id) {
+  return client.put(`/topics/${id}/pin`);
+}
+
+export function featureTopic(id) {
+  return client.put(`/topics/${id}/featured`);
+}

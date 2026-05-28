@@ -84,7 +84,7 @@ def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str
         query = query.filter(Topic.tags.any(Tag.slug == tag))
     total = query.count()
     topics = (
-        query.order_by(Topic.created_at.desc())
+        query.order_by(Topic.is_pinned.desc(), Topic.created_at.desc())
         .offset((page - 1) * size)
         .limit(size)
         .all()
@@ -106,6 +106,8 @@ def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str
             "last_comment_at": last_comment.created_at if last_comment else None,
             "tags": [{"id": tag.id, "name": tag.name, "slug": tag.slug} for tag in t.tags],
             "created_at": t.created_at,
+            "is_pinned": t.is_pinned,
+            "is_featured": t.is_featured,
         })
     return result, total
 
@@ -176,6 +178,20 @@ def delete_topic(db: Session, topic: Topic) -> None:
 def increment_view_count(db: Session, topic: Topic) -> None:
     topic.view_count = (topic.view_count or 0) + 1
     db.commit()
+
+
+def toggle_topic_pin(db: Session, topic: Topic) -> Topic:
+    topic.is_pinned = not topic.is_pinned
+    db.commit()
+    db.refresh(topic)
+    return topic
+
+
+def toggle_topic_featured(db: Session, topic: Topic) -> Topic:
+    topic.is_featured = not topic.is_featured
+    db.commit()
+    db.refresh(topic)
+    return topic
 
 
 # ── Like ──

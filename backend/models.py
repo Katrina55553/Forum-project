@@ -32,6 +32,8 @@ class Topic(Base):
     content = Column(Text, default="")
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     view_count = Column(Integer, default=0)
+    is_pinned = Column(Boolean, default=False)
+    is_featured = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
         DateTime,

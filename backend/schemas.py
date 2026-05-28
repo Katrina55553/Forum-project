@@ -117,6 +117,8 @@ class TopicListResponse(BaseModel):
     last_comment_at: datetime | None = None
     created_at: datetime
     tags: list[TagResponse] = []
+    is_pinned: bool = False
+    is_featured: bool = False
 
     model_config = {"from_attributes": True}
 
@@ -133,6 +135,8 @@ class TopicDetailResponse(BaseModel):
     is_liked: bool = False
     comments: list[CommentResponse] = []
     tags: list[TagResponse] = []
+    is_pinned: bool = False
+    is_featured: bool = False
 
     model_config = {"from_attributes": True}
 

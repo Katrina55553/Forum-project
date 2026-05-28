@@ -136,9 +136,13 @@ watch(currentTag, () => {
     <div v-else-if="topics.length === 0" class="state">暂无帖子</div>
 
     <div v-else class="topic-list">
-      <div v-for="t in topics" :key="t.id" class="topic-row">
+      <div v-for="t in topics" :key="t.id" class="topic-row" :class="{ pinned: t.is_pinned }">
         <div class="topic-main">
-          <router-link :to="`/topic/${t.id}`" class="topic-title">{{ t.title }}</router-link>
+          <div class="topic-title-row">
+            <span v-if="t.is_pinned" class="badge pin">📌 置顶</span>
+            <span v-if="t.is_featured" class="badge featured">⭐ 精华</span>
+            <router-link :to="`/topic/${t.id}`" class="topic-title">{{ t.title }}</router-link>
+          </div>
           <div v-if="t.tags?.length" class="topic-tags">
             <span
               v-for="tag in t.tags"
@@ -261,6 +265,32 @@ h1 { margin-bottom: 0.5rem; color: var(--color-text); }
 .topic-tag:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+.topic-row.pinned {
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-bg-secondary);
+}
+.topic-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.badge {
+  padding: 0.1rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge.pin {
+  background: var(--color-primary);
+  color: #fff;
+}
+.badge.featured {
+  background: #f59e0b;
+  color: #fff;
 }
 
 .state { text-align: center; padding: 2rem; color: var(--color-text-muted); }
