@@ -2,13 +2,15 @@ import logging
 import os
 import time
 import traceback
+import uuid
 from contextlib import asynccontextmanager
 
 import bleach
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -67,9 +69,17 @@ ALLOWED_ATTRS = {"a": ["href", "title"], "img": ["src", "alt"], "code": ["class"
 
 limiter = Limiter(key_func=get_remote_address)
 
+# ── Upload config ──
+
+UPLOAD_DIR = "uploads"
+AVATAR_DIR = os.path.join(UPLOAD_DIR, "avatars")
+MAX_AVATAR_SIZE = 2 * 1024 * 1024  # 2MB
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    os.makedirs(AVATAR_DIR, exist_ok=True)
     ensure_schema()
     yield
 
@@ -87,6 +97,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Static files ──
+
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.middleware("http")
@@ -143,6 +157,30 @@ def _comment_author_or_admin(comment: Comment, user: User):
 @app.get("/")
 def root():
     return {"message": "Forum API"}
+
+
+# ── Upload routes ──
+
+@app.post("/api/upload/avatar")
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="不支持的文件类型，请上传 JPG/PNG/GIF/WebP 图片")
+
+    content = await file.read()
+    if len(content) > MAX_AVATAR_SIZE:
+        raise HTTPException(status_code=400, detail="文件大小不能超过 2MB")
+
+    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
+    filename = f"{uuid.uuid4()}{ext}"
+    filepath = os.path.join(AVATAR_DIR, filename)
+
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    return {"url": f"/uploads/avatars/{filename}"}
 
 
 # ── Auth routes ──

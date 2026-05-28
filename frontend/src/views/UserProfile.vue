@@ -33,7 +33,10 @@ onMounted(fetchProfile);
     </div>
     <div v-else-if="profile">
       <div class="profile-header">
-        <div class="avatar">{{ profile.username[0]?.toUpperCase() }}</div>
+        <div class="avatar">
+          <img v-if="profile.avatar" :src="profile.avatar" :alt="profile.username" />
+          <span v-else class="avatar-initial">{{ profile.username[0]?.toUpperCase() }}</span>
+        </div>
         <h1>{{ profile.username }}</h1>
         <div class="stats">
           <span>帖子 {{ profile.topic_count || 0 }}</span>
@@ -90,14 +93,22 @@ onMounted(fetchProfile);
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 700;
+  overflow: hidden;
+  background: var(--color-border);
+  margin: 0 auto 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1rem;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-initial {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
 }
 .stats {
   display: flex;

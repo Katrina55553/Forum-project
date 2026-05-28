@@ -3,11 +3,15 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 import { updateMe, changePassword } from "../api/auth";
+import { uploadAvatar } from "../api/upload";
 
 const router = useRouter();
 const auth = useAuthStore();
 
 const avatar = ref("");
+const avatarPreview = ref("");
+const avatarFile = ref(null);
+const uploading = ref(false);
 const bio = ref("");
 const githubUrl = ref("");
 const saving = ref(false);
@@ -23,18 +27,36 @@ const pwSuccess = ref(false);
 onMounted(() => {
   if (auth.user) {
     avatar.value = auth.user.avatar || "";
+    avatarPreview.value = auth.user.avatar || "";
     bio.value = auth.user.bio || "";
     githubUrl.value = auth.user.github_url || "";
   }
 });
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  avatarFile.value = file;
+  avatarPreview.value = URL.createObjectURL(file);
+}
 
 async function handleSave() {
   error.value = "";
   success.value = false;
   saving.value = true;
   try {
+    let avatarUrl = avatar.value;
+
+    // 如果选择了新文件，先上传
+    if (avatarFile.value) {
+      uploading.value = true;
+      const res = await uploadAvatar(avatarFile.value);
+      avatarUrl = res.data.url;
+      uploading.value = false;
+    }
+
     const res = await updateMe({
-      avatar: avatar.value || null,
+      avatar: avatarUrl || null,
       bio: bio.value || null,
       github_url: githubUrl.value || null,
     });
@@ -42,6 +64,7 @@ async function handleSave() {
     localStorage.setItem("user", JSON.stringify(res.data));
     success.value = true;
   } catch (e) {
+    uploading.value = false;
     error.value = e.response?.data?.detail || "保存失败";
   } finally {
     saving.value = false;
@@ -77,10 +100,24 @@ async function handleChangePassword() {
       <div v-if="success" class="success">保存成功</div>
       <div v-if="error" class="error">{{ error }}</div>
 
-      <label>
-        <span>头像 URL</span>
-        <input v-model="avatar" type="text" placeholder="https://..." />
-      </label>
+      <!-- 头像上传区域 -->
+      <div class="avatar-section">
+        <div class="avatar-preview">
+          <img v-if="avatarPreview" :src="avatarPreview" alt="头像预览" />
+          <span v-else class="avatar-initial">{{ auth.user?.username?.[0]?.toUpperCase() }}</span>
+        </div>
+        <div class="avatar-actions">
+          <label class="btn-upload">
+            选择图片
+            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" @change="handleFileSelect" hidden />
+          </label>
+          <p class="hint">支持 JPG、PNG、GIF、WebP，最大 2MB</p>
+        </div>
+        <details class="url-input">
+          <summary>或输入图片 URL</summary>
+          <input v-model="avatar" type="text" placeholder="https://..." />
+        </details>
+      </div>
 
       <label>
         <span>个人简介</span>
@@ -178,6 +215,70 @@ textarea { resize: vertical; }
 .btn-save:disabled { opacity: 0.5; }
 .btn-cancel { color: var(--color-text-muted); text-decoration: none; font-size: 0.95rem; }
 .btn-cancel:hover { color: var(--color-text); }
+
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius);
+}
+.avatar-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar-initial {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.avatar-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-upload {
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  background: var(--color-text);
+  color: var(--color-bg);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.btn-upload:hover { opacity: 0.9; }
+.hint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.url-input {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.url-input summary {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.url-input summary:hover { color: var(--color-text); }
+.url-input input {
+  margin-top: 0.5rem;
+}
 
 .divider {
   margin: 2.5rem 0 1.5rem;
