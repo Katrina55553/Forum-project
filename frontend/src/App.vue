@@ -129,8 +129,8 @@ onBeforeUnmount(() => {
       </template>
 
       <!-- Messages (notifications + messages) -->
-      <router-link v-if="auth.user" to="/messages" class="notif-bell" :aria-label="'消息'">
-        &#128172;
+      <router-link v-if="auth.user" to="/messages" class="nav-messages" :aria-label="'消息'">
+        消息
         <span v-if="totalUnread > 0" class="notif-badge">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
       </router-link>
 
@@ -241,10 +241,31 @@ nav > a:hover { color: var(--color-text); }
   flex-shrink: 0;
 }
 .notif-bell:hover { border-color: var(--color-text); }
+
+/* Messages link */
+.nav-messages {
+  position: relative;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.3rem 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  transition: border-color 0.2s, color 0.2s;
+}
+.nav-messages:hover {
+  border-color: var(--color-text);
+  color: var(--color-text);
+}
+
 .notif-badge {
   position: absolute;
-  top: -4px;
-  right: -6px;
+  top: -6px;
+  right: -8px;
   background: var(--color-danger);
   color: #fff;
   font-size: 0.65rem;
