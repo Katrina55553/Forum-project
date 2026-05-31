@@ -27,15 +27,13 @@ const routes = [
   },
   {
     path: "/notifications",
-    name: "notifications",
-    component: () => import("../views/NotificationsView.vue"),
-    meta: { requiresAuth: true, title: "通知" },
+    redirect: "/messages",
   },
   {
     path: "/messages",
     name: "messages",
     component: () => import("../views/MessagesView.vue"),
-    meta: { requiresAuth: true, title: "私信" },
+    meta: { requiresAuth: true, title: "消息" },
   },
   {
     path: "/messages/:username",

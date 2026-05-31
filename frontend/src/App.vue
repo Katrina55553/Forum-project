@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import { getUnreadCount } from "./api/notification";
@@ -18,6 +18,8 @@ const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
 const unreadCount = ref(0);
 const unreadMessageCount = ref(0);
+
+const totalUnread = computed(() => unreadCount.value + unreadMessageCount.value);
 
 let notifTimer = null;
 
@@ -57,9 +59,9 @@ function goProfile() {
   router.push("/profile/edit");
 }
 
-function goNotifications() {
+function goMessages() {
   userMenuOpen.value = false;
-  router.push("/notifications");
+  router.push("/messages");
 }
 
 function logout() {
@@ -126,16 +128,10 @@ onBeforeUnmount(() => {
         <router-link to="/register" @click="closeMenu">注册</router-link>
       </template>
 
-      <!-- Notification bell -->
-      <router-link v-if="auth.user" to="/notifications" class="notif-bell" :aria-label="'通知'">
-        &#128276;
-        <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
-      </router-link>
-
-      <!-- Message icon -->
-      <router-link v-if="auth.user" to="/messages" class="notif-bell" :aria-label="'私信'">
+      <!-- Messages (notifications + messages) -->
+      <router-link v-if="auth.user" to="/messages" class="notif-bell" :aria-label="'消息'">
         &#128172;
-        <span v-if="unreadMessageCount > 0" class="notif-badge">{{ unreadMessageCount > 99 ? '99+' : unreadMessageCount }}</span>
+        <span v-if="totalUnread > 0" class="notif-badge">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
       </router-link>
 
       <!-- User avatar + dropdown -->
@@ -145,7 +141,7 @@ onBeforeUnmount(() => {
           <span v-else class="avatar-text">{{ userInitial() }}</span>
         </button>
         <div v-if="userMenuOpen" class="dropdown">
-          <button class="dropdown-item" @click="goNotifications">通知</button>
+          <button class="dropdown-item" @click="goMessages">消息</button>
           <button class="dropdown-item" @click="goProfile">编辑信息</button>
           <button class="dropdown-item logout" @click="logout">退出账号</button>
         </div>

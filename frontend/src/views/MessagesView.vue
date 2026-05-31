@@ -2,18 +2,49 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { getConversations } from "../api/message";
+import { getNotifications, markRead } from "../api/notification";
 
 const router = useRouter();
-const conversations = ref([]);
+const messages = ref([]);
 const loading = ref(true);
 const error = ref("");
 
-async function fetchConversations() {
+async function fetchMessages() {
   loading.value = true;
   error.value = "";
   try {
-    const res = await getConversations();
-    conversations.value = res.data;
+    // 同时获取通知和私信
+    const [notifRes, convRes] = await Promise.all([
+      getNotifications(1, 50),
+      getConversations(),
+    ]);
+
+    const notifications = (notifRes.data.items || []).map(n => ({
+      type: "notification",
+      id: `notif-${n.id}`,
+      sourceId: n.id,
+      username: "系统通知",
+      avatar: "",
+      preview: n.type === "reply" ? "有人回复了你的帖子" : "你有新通知",
+      time: n.created_at,
+      unread: !n.is_read,
+      topicId: n.topic_id,
+    }));
+
+    const conversations = (convRes.data || []).map(c => ({
+      type: "message",
+      id: `msg-${c.username}`,
+      username: c.username,
+      avatar: c.avatar,
+      preview: c.last_message,
+      time: c.last_message_at,
+      unread: c.unread_count > 0,
+      unreadCount: c.unread_count,
+    }));
+
+    // 合并并按时间排序
+    messages.value = [...notifications, ...conversations]
+      .sort((a, b) => new Date(b.time) - new Date(a.time));
   } catch {
     error.value = "加载失败";
   } finally {
@@ -32,47 +63,58 @@ function formatTime(t) {
   return new Date(t).toLocaleDateString();
 }
 
-function openChat(username) {
-  router.push(`/messages/${username}`);
+async function openMessage(msg) {
+  if (msg.type === "notification") {
+    // 标记通知已读
+    if (msg.unread) {
+      try { await markRead(msg.sourceId); } catch {}
+    }
+    if (msg.topicId) {
+      router.push(`/topic/${msg.topicId}`);
+    }
+  } else {
+    router.push(`/messages/${msg.username}`);
+  }
 }
 
-onMounted(fetchConversations);
+onMounted(fetchMessages);
 </script>
 
 <template>
   <div class="messages-page">
-    <h1>私信</h1>
+    <h1>消息</h1>
 
     <div v-if="loading" class="state">加载中...</div>
     <div v-else-if="error" class="state error">
       <p>{{ error }}</p>
-      <button @click="fetchConversations">重试</button>
+      <button @click="fetchMessages">重试</button>
     </div>
-    <div v-else-if="conversations.length === 0" class="state empty">
-      <p>暂无私信</p>
-      <p class="hint">访问其他用户主页，点击"发私信"开始聊天</p>
+    <div v-else-if="messages.length === 0" class="state empty">
+      <p>暂无消息</p>
     </div>
 
-    <div v-else class="conversation-list">
+    <div v-else class="message-list">
       <div
-        v-for="c in conversations"
-        :key="c.username"
-        class="conversation-item"
-        :class="{ unread: c.unread_count > 0 }"
-        @click="openChat(c.username)"
+        v-for="msg in messages"
+        :key="msg.id"
+        class="message-item"
+        :class="{ unread: msg.unread }"
+        @click="openMessage(msg)"
       >
-        <div class="avatar">
-          <img v-if="c.avatar" :src="c.avatar" :alt="c.username" />
-          <span v-else class="avatar-initial">{{ c.username[0]?.toUpperCase() }}</span>
+        <div class="avatar" :class="{ system: msg.type === 'notification' }">
+          <img v-if="msg.avatar" :src="msg.avatar" :alt="msg.username" />
+          <span v-else class="avatar-initial">{{ msg.type === 'notification' ? '🔔' : msg.username[0]?.toUpperCase() }}</span>
         </div>
         <div class="info">
           <div class="header">
-            <span class="username">{{ c.username }}</span>
-            <span class="time">{{ formatTime(c.last_message_at) }}</span>
+            <span class="username" :class="{ system: msg.type === 'notification' }">{{ msg.username }}</span>
+            <span class="time">{{ formatTime(msg.time) }}</span>
           </div>
-          <div class="preview">{{ c.last_message }}</div>
+          <div class="preview">{{ msg.preview }}</div>
         </div>
-        <div v-if="c.unread_count > 0" class="badge">{{ c.unread_count }}</div>
+        <div v-if="msg.unread" class="badge">
+          {{ msg.type === 'message' && msg.unreadCount ? msg.unreadCount : '' }}
+        </div>
       </div>
     </div>
   </div>
@@ -102,15 +144,11 @@ h1 {
   color: var(--color-text);
   cursor: pointer;
 }
-.hint {
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-}
-.conversation-list {
+.message-list {
   display: flex;
   flex-direction: column;
 }
-.conversation-item {
+.message-item {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -119,10 +157,10 @@ h1 {
   cursor: pointer;
   transition: background 0.2s;
 }
-.conversation-item:hover {
+.message-item:hover {
   background: var(--color-bg-secondary);
 }
-.conversation-item.unread {
+.message-item.unread {
   background: var(--color-bg-secondary);
 }
 .avatar {
@@ -136,6 +174,9 @@ h1 {
   align-items: center;
   justify-content: center;
 }
+.avatar.system {
+  background: var(--color-primary);
+}
 .avatar img {
   width: 100%;
   height: 100%;
@@ -145,6 +186,9 @@ h1 {
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--color-text-muted);
+}
+.avatar.system .avatar-initial {
+  color: #fff;
 }
 .info {
   flex: 1;
@@ -160,6 +204,9 @@ h1 {
   font-weight: 600;
   color: var(--color-text);
 }
+.username.system {
+  color: var(--color-primary);
+}
 .time {
   font-size: 0.8rem;
   color: var(--color-text-muted);
@@ -174,10 +221,15 @@ h1 {
 .badge {
   background: var(--color-primary);
   color: #fff;
-  padding: 0.2rem 0.6rem;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.5rem;
   border-radius: 10px;
   font-size: 0.75rem;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 </style>
