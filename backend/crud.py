@@ -365,7 +365,7 @@ def get_conversations(db: Session, user_id: int) -> list[dict]:
                     "username": other_user.username,
                     "avatar": other_user.avatar or "",
                     "last_message": msg.content[:50],
-                    "last_message_at": msg.created_at,
+                    "last_message_at": msg.created_at.isoformat(),
                     "unread_count": unread,
                 }
 
@@ -391,7 +391,17 @@ def get_messages_with_user(db: Session, user_id: int, other_username: str, page:
         .all()
     )
     return {
-        "messages": messages,
+        "messages": [
+            {
+                "id": msg.id,
+                "sender_id": msg.sender_id,
+                "receiver_id": msg.receiver_id,
+                "content": msg.content,
+                "is_read": msg.is_read,
+                "created_at": msg.created_at.isoformat(),
+            }
+            for msg in messages
+        ],
         "other_user": {"id": other_user.id, "username": other_user.username, "avatar": other_user.avatar or ""},
         "total": total,
     }
