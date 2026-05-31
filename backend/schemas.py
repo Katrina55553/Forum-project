@@ -168,3 +168,29 @@ class NotificationResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ── Message ──
+
+class MessageCreate(BaseModel):
+    receiver: str
+    content: str
+
+
+class MessageResponse(BaseModel):
+    id: int
+    sender_id: int
+    receiver_id: int
+    content: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationResponse(BaseModel):
+    username: str
+    avatar: str
+    last_message: str
+    last_message_at: datetime
+    unread_count: int

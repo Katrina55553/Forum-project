@@ -1,9 +1,12 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { getUserProfile } from "../api/user";
+import { useAuthStore } from "../stores/auth";
 
 const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
 const profile = ref(null);
 const loading = ref(true);
 const error = ref("");
@@ -47,6 +50,13 @@ onMounted(fetchProfile);
           GitHub
         </a>
         <p class="join-date">加入于 {{ new Date(profile.created_at).toLocaleDateString() }}</p>
+        <button
+          v-if="auth.user && auth.user.username !== profile.username"
+          class="btn-message"
+          @click="router.push(`/messages/${profile.username}`)"
+        >
+          发私信
+        </button>
       </div>
       <section class="user-topics">
         <h2>帖子</h2>
@@ -127,6 +137,17 @@ h1 { color: var(--color-text); margin-bottom: 0.5rem; }
   font-size: 0.9rem;
 }
 .join-date { color: var(--color-text-muted); font-size: 0.85rem; margin-top: 0.5rem; }
+.btn-message {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.btn-message:hover { opacity: 0.9; }
 
 .user-topics h2 { margin-bottom: 1rem; color: var(--color-text); font-size: 1.2rem; }
 

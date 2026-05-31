@@ -46,6 +46,12 @@ def ensure_schema():
         conn.execute(text(
             "ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES comments(id)"
         ))
+        conn.execute(text(
+            "ALTER TABLE topics ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE"
+        ))
+        conn.execute(text(
+            "ALTER TABLE topics ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE"
+        ))
 
 
 def get_db() -> Generator[Session, None, None]:

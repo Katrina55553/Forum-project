@@ -32,6 +32,18 @@ const routes = [
     meta: { requiresAuth: true, title: "通知" },
   },
   {
+    path: "/messages",
+    name: "messages",
+    component: () => import("../views/MessagesView.vue"),
+    meta: { requiresAuth: true, title: "私信" },
+  },
+  {
+    path: "/messages/:username",
+    name: "chat",
+    component: () => import("../views/ChatView.vue"),
+    meta: { requiresAuth: true, title: "聊天" },
+  },
+  {
     path: "/login",
     name: "login",
     component: () => import("../views/LoginView.vue"),

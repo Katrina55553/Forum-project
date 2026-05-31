@@ -27,17 +27,22 @@ from crud import (
     delete_topic,
     get_all_tags,
     get_comment_by_id,
+    get_conversations,
+    get_messages_with_user,
     get_notifications,
     get_topic_by_id,
     get_topic_for_edit,
     get_topics,
+    get_unread_message_count,
     get_unread_notification_count,
     get_user_by_username,
     get_user_profile,
     increment_view_count,
     like_topic,
     mark_all_notifications_read,
+    mark_messages_read,
     mark_notification_read,
+    send_message,
     toggle_topic_featured,
     toggle_topic_pin,
     unlike_topic,
@@ -49,6 +54,7 @@ from models import Comment, Notification, Topic, User  # noqa: F401
 from schemas import (
     CommentCreate,
     CommentResponse,
+    MessageCreate,
     NotificationResponse,
     PasswordChange,
     TokenResponse,
@@ -403,6 +409,42 @@ def read_notification(notif_id: int, current_user: User = Depends(get_current_us
 @app.put("/api/notifications/read-all")
 def read_all_notifications(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     mark_all_notifications_read(db, current_user.id)
+    return {"message": "ok"}
+
+
+# ── Message routes ──
+
+@app.post("/api/messages")
+def send_message_route(data: MessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    message = send_message(db, current_user.id, data.receiver, sanitize(data.content))
+    if not message:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="发送失败，用户不存在或不能给自己发私信")
+    return {"message": "发送成功", "id": message.id}
+
+
+@app.get("/api/messages")
+def list_conversations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return get_conversations(db, current_user.id)
+
+
+@app.get("/api/messages/unread-count")
+def unread_message_count(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return {"count": get_unread_message_count(db, current_user.id)}
+
+
+@app.get("/api/messages/{username}")
+def get_messages_route(username: str, page: int = 1, size: int = 50, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    result = get_messages_with_user(db, current_user.id, username, page, size)
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
+    # 标记消息为已读
+    mark_messages_read(db, current_user.id, username)
+    return result
+
+
+@app.put("/api/messages/{username}/read")
+def mark_read_route(username: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    mark_messages_read(db, current_user.id, username)
     return {"message": "ok"}
 
 

@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import { getUnreadCount } from "./api/notification";
+import { getUnreadMessageCount } from "./api/message";
 import AppToast from "./components/AppToast.vue";
 import BackToTop from "./components/BackToTop.vue";
 import ConfirmDialog from "./components/ConfirmDialog.vue";
@@ -16,6 +17,7 @@ const navRef = ref(null);
 const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
 const unreadCount = ref(0);
+const unreadMessageCount = ref(0);
 
 let notifTimer = null;
 
@@ -76,13 +78,26 @@ async function fetchUnreadCount() {
   }
 }
 
+async function fetchUnreadMessageCount() {
+  try {
+    const res = await getUnreadMessageCount();
+    unreadMessageCount.value = res.data.count;
+  } catch {
+    // ignore
+  }
+}
+
 onMounted(() => {
   initTheme();
   auth.restoreUser();
   document.addEventListener("click", onDocClick);
   if (auth.user) {
     fetchUnreadCount();
-    notifTimer = setInterval(fetchUnreadCount, 30000);
+    fetchUnreadMessageCount();
+    notifTimer = setInterval(() => {
+      fetchUnreadCount();
+      fetchUnreadMessageCount();
+    }, 30000);
   }
 });
 
@@ -115,6 +130,12 @@ onBeforeUnmount(() => {
       <router-link v-if="auth.user" to="/notifications" class="notif-bell" :aria-label="'通知'">
         &#128276;
         <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+      </router-link>
+
+      <!-- Message icon -->
+      <router-link v-if="auth.user" to="/messages" class="notif-bell" :aria-label="'私信'">
+        &#128172;
+        <span v-if="unreadMessageCount > 0" class="notif-badge">{{ unreadMessageCount > 99 ? '99+' : unreadMessageCount }}</span>
       </router-link>
 
       <!-- User avatar + dropdown -->

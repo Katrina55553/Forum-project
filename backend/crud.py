@@ -2,7 +2,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from auth import hash_password
-from models import Comment, Notification, Tag, Topic, User, likes, topic_tags
+from models import Comment, Message, Notification, Tag, Topic, User, likes, topic_tags
 
 
 # ── User ──
@@ -325,3 +325,91 @@ def mark_notification_read(db: Session, notif_id: int, user_id: int) -> None:
 def mark_all_notifications_read(db: Session, user_id: int) -> None:
     db.query(Notification).filter_by(user_id=user_id, is_read=False).update({"is_read": True})
     db.commit()
+
+
+# ── Message ──
+
+def send_message(db: Session, sender_id: int, receiver_username: str, content: str) -> Message | None:
+    receiver = db.query(User).filter_by(username=receiver_username).first()
+    if not receiver or receiver.id == sender_id:
+        return None
+    message = Message(sender_id=sender_id, receiver_id=receiver.id, content=content)
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+def get_conversations(db: Session, user_id: int) -> list[dict]:
+    """获取会话列表（按最后消息时间排序）"""
+    # 获取与当前用户相关的所有对话用户
+    messages = (
+        db.query(Message)
+        .filter(or_(Message.sender_id == user_id, Message.receiver_id == user_id))
+        .order_by(Message.created_at.desc())
+        .all()
+    )
+
+    conversations = {}
+    for msg in messages:
+        other_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
+        if other_id not in conversations:
+            other_user = db.query(User).filter_by(id=other_id).first()
+            if other_user:
+                unread = db.query(func.count(Message.id)).filter(
+                    Message.sender_id == other_id,
+                    Message.receiver_id == user_id,
+                    Message.is_read == False,
+                ).scalar()
+                conversations[other_id] = {
+                    "username": other_user.username,
+                    "avatar": other_user.avatar or "",
+                    "last_message": msg.content[:50],
+                    "last_message_at": msg.created_at,
+                    "unread_count": unread,
+                }
+
+    return sorted(conversations.values(), key=lambda x: x["last_message_at"], reverse=True)
+
+
+def get_messages_with_user(db: Session, user_id: int, other_username: str, page: int = 1, size: int = 50) -> dict | None:
+    other_user = db.query(User).filter_by(username=other_username).first()
+    if not other_user:
+        return None
+
+    query = db.query(Message).filter(
+        or_(
+            (Message.sender_id == user_id) & (Message.receiver_id == other_user.id),
+            (Message.sender_id == other_user.id) & (Message.receiver_id == user_id),
+        )
+    )
+    total = query.count()
+    messages = (
+        query.order_by(Message.created_at.asc())
+        .offset((page - 1) * size)
+        .limit(size)
+        .all()
+    )
+    return {
+        "messages": messages,
+        "other_user": {"id": other_user.id, "username": other_user.username, "avatar": other_user.avatar or ""},
+        "total": total,
+    }
+
+
+def mark_messages_read(db: Session, user_id: int, other_username: str) -> None:
+    other_user = db.query(User).filter_by(username=other_username).first()
+    if other_user:
+        db.query(Message).filter(
+            Message.sender_id == other_user.id,
+            Message.receiver_id == user_id,
+            Message.is_read == False,
+        ).update({"is_read": True})
+        db.commit()
+
+
+def get_unread_message_count(db: Session, user_id: int) -> int:
+    return db.query(func.count(Message.id)).filter(
+        Message.receiver_id == user_id,
+        Message.is_read == False,
+    ).scalar()
