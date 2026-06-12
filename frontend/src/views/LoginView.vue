@@ -21,8 +21,9 @@ async function handleLogin() {
   loading.value = true;
   try {
     await auth.login(username.value, password.value);
-    const redirect = route.query.redirect || "/";
-    router.push(redirect);
+    const redirect = route.query.redirect;
+    const safeRedirect = (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) ? redirect : '/';
+    router.push(safeRedirect);
   } catch (e) {
     error.value = e.response?.data?.detail || "登录失败";
   } finally {

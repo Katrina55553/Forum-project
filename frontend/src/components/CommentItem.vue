@@ -77,6 +77,7 @@ async function handleDelete() {
       :auth="auth"
       @reply-created="emit('reply-created', $event)"
       @comment-deleted="emit('comment-deleted', $event)"
+      v-if="depth < 10"
     />
   </div>
 </template>

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Table, Text
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -62,6 +62,11 @@ class Comment(Base):
     parent = relationship("Comment", remote_side="Comment.id", back_populates="replies")
     replies = relationship("Comment", back_populates="parent", cascade="all, delete-orphan")
 
+    __table_args__ = (
+        Index("ix_comments_topic_id", "topic_id"),
+        Index("ix_comments_parent_id", "parent_id"),
+    )
+
     @property
     def username(self):
         return self.author.username if self.author else ""
@@ -71,12 +76,16 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     type = Column(String, nullable=False, default="reply")
-    topic_id = Column(Integer, ForeignKey("topics.id"), nullable=True)
-    comment_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
+    topic_id = Column(Integer, ForeignKey("topics.id", ondelete="CASCADE"), nullable=True)
+    comment_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index("ix_notifications_user_read", "user_id", "is_read"),
+    )
 
 
 class Message(Base):
@@ -91,6 +100,11 @@ class Message(Base):
 
     sender = relationship("User", foreign_keys=[sender_id])
     receiver = relationship("User", foreign_keys=[receiver_id])
+
+    __table_args__ = (
+        Index("ix_messages_sender_receiver", "sender_id", "receiver_id"),
+        Index("ix_messages_receiver_read", "receiver_id", "is_read"),
+    )
 
 
 # likes table for Topic.likes relationship

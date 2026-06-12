@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from auth import hash_password
@@ -54,12 +54,14 @@ def get_or_create_tags(db: Session, tag_names: list[str]) -> list[Tag]:
 
 def get_all_tags(db: Session) -> list[dict]:
     """获取所有标签及其帖子数量"""
-    tags = db.query(Tag).all()
-    result = []
-    for tag in tags:
-        count = db.query(func.count(topic_tags.c.topic_id)).filter(topic_tags.c.tag_id == tag.id).scalar()
-        result.append({"id": tag.id, "name": tag.name, "slug": tag.slug, "count": count})
-    return sorted(result, key=lambda x: x["count"], reverse=True)
+    rows = (
+        db.query(Tag, func.count(topic_tags.c.topic_id).label("count"))
+        .outerjoin(topic_tags, Tag.id == topic_tags.c.tag_id)
+        .group_by(Tag.id)
+        .order_by(func.count(topic_tags.c.topic_id).desc())
+        .all()
+    )
+    return [{"id": t.id, "name": t.name, "slug": t.slug, "count": c} for t, c in rows]
 
 
 # ── Topic ──
@@ -77,12 +79,20 @@ def create_topic(db: Session, author_id: int, title: str, content: str, tag_name
 
 
 def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str = ""):
+    # 先用简单查询计数（避免 joinedload 导致 count 膨胀）
+    count_query = db.query(Topic)
+    if q:
+        count_query = count_query.filter(or_(Topic.title.ilike(f"%{q}%"), Topic.content.ilike(f"%{q}%")))
+    if tag:
+        count_query = count_query.filter(Topic.tags.any(Tag.slug == tag))
+    total = count_query.count()
+
+    # 再用 joinedload 查询实际数据
     query = db.query(Topic).options(joinedload(Topic.author), joinedload(Topic.tags))
     if q:
         query = query.filter(or_(Topic.title.ilike(f"%{q}%"), Topic.content.ilike(f"%{q}%")))
     if tag:
         query = query.filter(Topic.tags.any(Tag.slug == tag))
-    total = query.count()
     topics = (
         query.order_by(Topic.is_pinned.desc(), Topic.created_at.desc())
         .offset((page - 1) * size)
@@ -171,12 +181,16 @@ def update_topic(db: Session, topic: Topic, data: dict) -> Topic:
 def delete_topic(db: Session, topic: Topic) -> None:
     user_id = topic.author_id
     db.delete(topic)
-    db.query(User).filter_by(id=user_id).update({"topic_count": User.topic_count - 1})
+    db.query(User).filter_by(id=user_id).update(
+        {"topic_count": case((User.topic_count > 0, User.topic_count - 1), else_=0)}
+    )
     db.commit()
 
 
 def increment_view_count(db: Session, topic: Topic) -> None:
-    topic.view_count = (topic.view_count or 0) + 1
+    db.query(Topic).filter_by(id=topic.id).update(
+        {"view_count": Topic.view_count + 1}
+    )
     db.commit()
 
 
@@ -257,9 +271,24 @@ def get_comment_by_id(db: Session, comment_id: int) -> Comment | None:
 
 
 def delete_comment(db: Session, comment: Comment) -> None:
-    user_id = comment.user_id
+    # 收集所有子评论（包括嵌套的）
+    def _collect_replies(c):
+        result = [c]
+        # 确保 replies 已加载
+        for r in (c.replies or []):
+            result.extend(_collect_replies(r))
+        return result
+
+    # 预加载 replies 关系
+    db.refresh(comment)
+    all_comments = _collect_replies(comment)
+
+    # 为每个评论作者减少计数
+    for c in all_comments:
+        db.query(User).filter_by(id=c.user_id).update(
+            {"comment_count": case((User.comment_count > 0, User.comment_count - 1), else_=0)}
+        )
     db.delete(comment)
-    db.query(User).filter_by(id=user_id).update({"comment_count": User.comment_count - 1})
     db.commit()
 
 
@@ -342,34 +371,57 @@ def send_message(db: Session, sender_id: int, receiver_username: str, content: s
 
 def get_conversations(db: Session, user_id: int) -> list[dict]:
     """获取会话列表（按最后消息时间排序）"""
-    # 获取与当前用户相关的所有对话用户
-    messages = (
-        db.query(Message)
+    # 子查询：获取每个对话用户的最新消息 ID
+    latest_sq = (
+        db.query(
+            case(
+                (Message.sender_id == user_id, Message.receiver_id),
+                else_=Message.sender_id
+            ).label("other_id"),
+            func.max(Message.id).label("last_msg_id"),
+        )
         .filter(or_(Message.sender_id == user_id, Message.receiver_id == user_id))
+        .group_by("other_id")
+        .subquery()
+    )
+
+    # 子查询：每个对话用户的未读消息数
+    unread_sq = (
+        db.query(
+            Message.sender_id.label("other_id"),
+            func.count(Message.id).label("cnt"),
+        )
+        .filter(Message.receiver_id == user_id, Message.is_read == False)
+        .group_by(Message.sender_id)
+        .subquery()
+    )
+
+    # 主查询：最新消息 + 用户信息 + 未读数
+    rows = (
+        db.query(
+            User.username,
+            User.avatar,
+            Message.content,
+            Message.created_at,
+            func.coalesce(unread_sq.c.cnt, 0).label("unread_count"),
+        )
+        .join(latest_sq, User.id == latest_sq.c.other_id)
+        .join(Message, Message.id == latest_sq.c.last_msg_id)
+        .outerjoin(unread_sq, unread_sq.c.other_id == User.id)
         .order_by(Message.created_at.desc())
         .all()
     )
 
-    conversations = {}
-    for msg in messages:
-        other_id = msg.receiver_id if msg.sender_id == user_id else msg.sender_id
-        if other_id not in conversations:
-            other_user = db.query(User).filter_by(id=other_id).first()
-            if other_user:
-                unread = db.query(func.count(Message.id)).filter(
-                    Message.sender_id == other_id,
-                    Message.receiver_id == user_id,
-                    Message.is_read == False,
-                ).scalar()
-                conversations[other_id] = {
-                    "username": other_user.username,
-                    "avatar": other_user.avatar or "",
-                    "last_message": msg.content[:50],
-                    "last_message_at": msg.created_at.isoformat(),
-                    "unread_count": unread,
-                }
-
-    return sorted(conversations.values(), key=lambda x: x["last_message_at"], reverse=True)
+    return [
+        {
+            "username": r.username,
+            "avatar": r.avatar or "",
+            "last_message": (r.content or "")[:50],
+            "last_message_at": r.created_at.isoformat() if r.created_at else "",
+            "unread_count": r.unread_count or 0,
+        }
+        for r in rows
+    ]
 
 
 def get_messages_with_user(db: Session, user_id: int, other_username: str, page: int = 1, size: int = 50) -> dict | None:

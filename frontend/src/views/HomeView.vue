@@ -84,14 +84,10 @@ onMounted(() => {
   fetchTags();
 });
 watch(page, fetchTopics);
-watch(q, () => {
+watch(() => route.query, () => {
   page.value = 1;
   fetchTopics();
-});
-watch(currentTag, () => {
-  page.value = 1;
-  fetchTopics();
-});
+}, { deep: true });
 </script>
 
 <template>

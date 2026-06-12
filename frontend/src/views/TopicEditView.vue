@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { createTopic, updateTopic, getTopicById, getTopicForEdit } from "../api/topic";
 import { getTags } from "../api/tag";
 import { showToast } from "../composables/toast";
@@ -21,7 +22,7 @@ const error = ref("");
 
 const previewHtml = computed(() => {
   if (!content.value) return "<em>暂无内容</em>";
-  return marked(content.value);
+  return DOMPurify.sanitize(marked(content.value));
 });
 
 async function init() {
@@ -36,7 +37,7 @@ async function init() {
   if (isEdit.value) {
     pageLoading.value = true;
     try {
-      const res = await getTopicById(route.params.id);
+      const res = await getTopicForEdit(route.params.id);
       title.value = res.data.title;
       content.value = res.data.content;
       tags.value = res.data.tags?.map(t => t.name) || [];

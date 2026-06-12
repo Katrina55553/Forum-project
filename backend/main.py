@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 import bleach
 import uvicorn
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -148,7 +148,8 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 # ── Helpers ──
 
 def sanitize(text: str) -> str:
-    return bleach.clean(text, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRS, strip=True)
+    return bleach.clean(text, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRS,
+                        protocols=["http", "https", "mailto"], strip=True)
 
 
 def _author_or_admin(topic: Topic, user: User):
@@ -171,7 +172,9 @@ def root():
 # ── Upload routes ──
 
 @app.post("/api/upload/avatar")
+@limiter.limit("10/minute")
 async def upload_avatar(
+    request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
@@ -181,6 +184,12 @@ async def upload_avatar(
     content = await file.read()
     if len(content) > MAX_AVATAR_SIZE:
         raise HTTPException(status_code=400, detail="文件大小不能超过 2MB")
+
+    # 验证文件魔术字节，防止伪造 content-type
+    import imghdr
+    detected = imghdr.from_buffer(content)
+    if detected not in ("jpeg", "png", "gif", "webp"):
+        raise HTTPException(status_code=400, detail="文件内容不是有效图片")
 
     ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
     filename = f"{uuid.uuid4()}{ext}"
@@ -223,7 +232,8 @@ def update_me(data: UserUpdate, current_user: User = Depends(get_current_user), 
 
 
 @app.put("/api/auth/password")
-def update_password(data: PasswordChange, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def update_password(request: Request, data: PasswordChange, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not verify_password(data.old_password, current_user.password_hash):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="原密码错误")
     change_password(db, current_user, data.new_password)
@@ -240,7 +250,13 @@ def list_tags(db: Session = Depends(get_db)):
 # ── Topic routes ──
 
 @app.get("/api/topics")
-def list_topics(page: int = 1, size: int = 10, q: str = "", tag: str = "", db: Session = Depends(get_db)):
+def list_topics(
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    q: str = "",
+    tag: str = "",
+    db: Session = Depends(get_db),
+):
     items, total = get_topics(db, page=page, size=size, q=q, tag=tag)
     return {
         "items": items,
@@ -415,7 +431,8 @@ def read_all_notifications(current_user: User = Depends(get_current_user), db: S
 # ── Message routes ──
 
 @app.post("/api/messages")
-def send_message_route(data: MessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def send_message_route(request: Request, data: MessageCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     message = send_message(db, current_user.id, data.receiver, sanitize(data.content))
     if not message:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="发送失败，用户不存在或不能给自己发私信")

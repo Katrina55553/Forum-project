@@ -7,6 +7,10 @@ const state = reactive({
 });
 
 export function showConfirm(message) {
+  // 如果已有未完成的确认框，先拒绝它
+  if (state.visible && state.resolve) {
+    state.resolve(false);
+  }
   return new Promise((resolve) => {
     state.message = message;
     state.visible = true;

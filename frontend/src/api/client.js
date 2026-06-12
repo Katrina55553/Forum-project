@@ -17,8 +17,11 @@ client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // 清除本地存储
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      // 通知 Pinia store 清除状态
+      window.dispatchEvent(new CustomEvent("auth-expired"));
       const currentPath = window.location.pathname;
       if (currentPath !== "/login" && currentPath !== "/register") {
         window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;

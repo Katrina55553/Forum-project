@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getMessages, sendMessage, markMessagesRead } from "../api/message";
 import { useAuthStore } from "../stores/auth";
+import { showToast } from "../composables/toast";
 
 const route = useRoute();
 const router = useRouter();
@@ -46,7 +47,7 @@ async function handleSend() {
     newMessage.value = "";
     await fetchMessages();
   } catch (e) {
-    alert(e.response?.data?.detail || "发送失败");
+    showToast.error(e.response?.data?.detail || "发送失败");
   } finally {
     sending.value = false;
   }
@@ -69,7 +70,7 @@ function formatTime(t) {
 }
 
 function onKeydown(e) {
-  if (e.key === "Enter" && !e.shiftKey) {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
     e.preventDefault();
     handleSend();
   }
@@ -100,7 +101,10 @@ onUnmounted(() => {
     </div>
 
     <div v-if="loading" class="state">加载中...</div>
-    <div v-else-if="error" class="state error">{{ error }}</div>
+    <div v-else-if="error" class="state error">
+      <p>{{ error }}</p>
+      <button class="btn-retry" @click="fetchMessages">重试</button>
+    </div>
 
     <template v-else>
       <div class="messages" ref="messagesContainer">

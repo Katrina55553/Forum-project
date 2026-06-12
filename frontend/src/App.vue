@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
+import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 import { getUnreadCount } from "./api/notification";
@@ -84,17 +84,42 @@ async function fetchUnreadMessageCount() {
   }
 }
 
-onMounted(() => {
-  initTheme();
-  auth.restoreUser();
-  document.addEventListener("click", onDocClick);
-  if (auth.user) {
+function startPolling() {
+  if (notifTimer) clearInterval(notifTimer);
+  fetchUnreadCount();
+  fetchUnreadMessageCount();
+  notifTimer = setInterval(() => {
     fetchUnreadCount();
     fetchUnreadMessageCount();
-    notifTimer = setInterval(() => {
-      fetchUnreadCount();
-      fetchUnreadMessageCount();
-    }, 30000);
+  }, 30000);
+}
+
+function stopPolling() {
+  if (notifTimer) {
+    clearInterval(notifTimer);
+    notifTimer = null;
+  }
+}
+
+// 监听登录状态变化
+watch(() => auth.user, (newUser, oldUser) => {
+  if (newUser && !oldUser) {
+    startPolling();
+  } else if (!newUser && oldUser) {
+    stopPolling();
+  }
+});
+
+onMounted(async () => {
+  initTheme();
+  await auth.restoreUser();
+  document.addEventListener("click", onDocClick);
+  window.addEventListener("auth-expired", () => {
+    auth.clearAuth();
+    stopPolling();
+  });
+  if (auth.user) {
+    startPolling();
   }
 });
 

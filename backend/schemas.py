@@ -41,6 +41,13 @@ class UserUpdate(BaseModel):
     bio: str | None = None
     github_url: str | None = None
 
+    @field_validator("github_url")
+    @classmethod
+    def validate_github_url(cls, v):
+        if v and not v.startswith(("https://", "http://")):
+            raise ValueError("必须是有效的 URL")
+        return v
+
 
 class PasswordChange(BaseModel):
     old_password: str

@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { marked } from "marked";
+import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
 import { getTopicById, deleteTopic, pinTopic, featureTopic } from "../api/topic";
@@ -70,7 +71,7 @@ const isAdmin = computed(() => auth.user?.is_admin);
 
 const renderedContent = computed(() => {
   if (!topic.value?.content) return "";
-  return marked(topic.value.content);
+  return DOMPurify.sanitize(marked(topic.value.content));
 });
 
 function handleEdit() {
