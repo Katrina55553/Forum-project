@@ -131,57 +131,86 @@ onBeforeUnmount(() => {
 
 <template>
   <header class="navbar">
-    <router-link to="/" class="brand" @click="closeMenu">Forum</router-link>
-
-    <button class="hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? '关闭菜单' : '打开菜单'">
-      <span></span><span></span><span></span>
-    </button>
-
-    <nav ref="navRef" :class="{ open: menuOpen }">
-      <router-link to="/" @click="closeMenu">首页</router-link>
-
-      <template v-if="auth.user">
-        <router-link to="/topic/new" @click="closeMenu">发帖</router-link>
-      </template>
-      <template v-else>
-        <router-link to="/login" @click="closeMenu">登录</router-link>
-        <router-link to="/register" @click="closeMenu">注册</router-link>
-      </template>
-
-      <!-- Messages (notifications + messages) -->
-      <router-link v-if="auth.user" to="/messages" class="nav-messages" :aria-label="'消息'">
-        消息
-        <span v-if="totalUnread > 0" class="notif-badge">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
+    <div class="navbar-inner">
+      <router-link to="/" class="brand" @click="closeMenu">
+        <span class="brand-mark">✦</span>
+        <span class="brand-text">Inkwell</span>
       </router-link>
 
-      <!-- User avatar + dropdown -->
-      <div v-if="auth.user" ref="userMenuRef" class="user-menu">
-        <button class="avatar-btn" @click="userMenuOpen = !userMenuOpen" :aria-label="'用户菜单'">
-          <img v-if="auth.user.avatar" :src="auth.user.avatar" class="avatar-img" />
-          <span v-else class="avatar-text">{{ userInitial() }}</span>
-        </button>
-        <div v-if="userMenuOpen" class="dropdown">
-          <button class="dropdown-item" @click="goProfile">编辑信息</button>
-          <button class="dropdown-item logout" @click="logout">退出账号</button>
-        </div>
-      </div>
-
-      <button class="theme-toggle" @click="toggleTheme" :aria-label="isDark ? '切换亮色' : '切换暗色'">
-        {{ isDark ? '🌙' : '☀️' }}
+      <button class="hamburger" @click="menuOpen = !menuOpen" :aria-label="menuOpen ? '关闭菜单' : '打开菜单'">
+        <span></span><span></span><span></span>
       </button>
 
-      <a
-        href="https://github.com/Katrina55553/Blog-project"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="github-link"
-        :aria-label="'GitHub'"
-      >
-        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-      </a>
-    </nav>
+      <nav ref="navRef" :class="{ open: menuOpen }">
+        <router-link to="/" class="nav-link" @click="closeMenu">首页</router-link>
+
+        <template v-if="auth.user">
+          <router-link to="/topic/new" class="nav-link nav-link-cta" @click="closeMenu">
+            <span class="cta-plus">+</span> 发帖
+          </router-link>
+        </template>
+        <template v-else>
+          <router-link to="/login" class="nav-link" @click="closeMenu">登录</router-link>
+          <router-link to="/register" class="nav-link nav-link-cta" @click="closeMenu">注册</router-link>
+        </template>
+
+        <!-- Messages (notifications + messages) -->
+        <router-link v-if="auth.user" to="/messages" class="nav-icon-btn nav-messages" :aria-label="'消息'">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
+          <span v-if="totalUnread > 0" class="notif-badge">{{ totalUnread > 99 ? '99+' : totalUnread }}</span>
+        </router-link>
+
+        <!-- User avatar + dropdown -->
+        <div v-if="auth.user" ref="userMenuRef" class="user-menu">
+          <button class="avatar-btn" @click="userMenuOpen = !userMenuOpen" :aria-label="'用户菜单'">
+            <img v-if="auth.user.avatar" :src="auth.user.avatar" class="avatar-img" />
+            <span v-else class="avatar-text">{{ userInitial() }}</span>
+          </button>
+          <Transition name="dropdown">
+            <div v-if="userMenuOpen" class="dropdown">
+              <div class="dropdown-header">
+                <div class="dropdown-avatar">
+                  <img v-if="auth.user.avatar" :src="auth.user.avatar" />
+                  <span v-else>{{ userInitial() }}</span>
+                </div>
+                <div class="dropdown-user">
+                  <div class="dropdown-username">{{ auth.user.username }}</div>
+                  <div class="dropdown-role">{{ auth.user.is_admin ? '管理员' : '成员' }}</div>
+                </div>
+              </div>
+              <button class="dropdown-item" @click="goProfile">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                编辑信息
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item logout" @click="logout">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                退出账号
+              </button>
+            </div>
+          </Transition>
+        </div>
+
+        <button class="nav-icon-btn theme-toggle" @click="toggleTheme" :aria-label="isDark ? '切换亮色' : '切换暗色'">
+          <svg v-if="isDark" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg v-else width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+
+        <a
+          href="https://github.com/Katrina55553/Blog-project"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="nav-icon-btn github-link"
+          :aria-label="'GitHub'"
+        >
+          <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
+      </nav>
+    </div>
   </header>
   <main class="container">
     <router-view />
@@ -193,173 +222,197 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .navbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 1.5rem;
-  height: 56px;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-bg);
-  transition: background 0.3s, border-color 0.3s;
   position: sticky;
   top: 0;
   z-index: 100;
+  background: rgba(247, 243, 236, 0.82);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
+[data-theme="dark"] .navbar {
+  background: rgba(22, 19, 16, 0.82);
+}
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 64px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Brand */
 .brand {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   text-decoration: none;
   flex-shrink: 0;
+}
+.brand-mark {
+  font-size: 1.15rem;
+  color: var(--color-primary);
+  transform: translateY(-1px);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.brand:hover .brand-mark {
+  transform: translateY(-1px) rotate(72deg);
+}
+.brand-text {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
 }
 
 /* Hamburger */
 .hamburger {
   display: none;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
 }
 .hamburger span {
   display: block;
   width: 22px;
   height: 2px;
   background: var(--color-text);
-  transition: transform 0.2s;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 nav {
   display: flex;
   align-items: center;
-  gap: 1.2rem;
+  gap: 0.4rem;
 }
-nav > a {
+.nav-link {
+  position: relative;
   color: var(--color-text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
+  font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
-}
-nav > a:hover { color: var(--color-text); }
-
-/* Notification bell */
-.notif-bell {
-  position: relative;
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-}
-.notif-bell:hover { border-color: var(--color-text); }
-
-/* Messages link */
-.nav-messages {
-  position: relative;
-  background: none;
-  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.85rem;
   border-radius: var(--radius);
-  padding: 0.3rem 0.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
-  transition: border-color 0.2s, color 0.2s;
+  transition: color 0.2s ease, background 0.2s ease;
 }
-.nav-messages:hover {
-  border-color: var(--color-text);
+.nav-link:hover {
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+}
+.nav-link.router-link-exact-active {
   color: var(--color-text);
 }
+.nav-link.router-link-exact-active::after {
+  content: "";
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: 0.25rem;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
 
+/* CTA-style nav link (发帖 / 注册) */
+.nav-link-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--color-text);
+  color: var(--color-bg) !important;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.nav-link-cta:hover {
+  background: var(--color-text);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.nav-link-cta.router-link-active::after { display: none; }
+.cta-plus {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Icon buttons (messages, theme, github) */
+.nav-icon-btn {
+  position: relative;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.nav-icon-btn:hover {
+  color: var(--color-text);
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border-light);
+}
+
+/* Notification badge */
 .notif-badge {
   position: absolute;
-  top: -6px;
-  right: -8px;
-  background: var(--color-danger);
+  top: -2px;
+  right: -2px;
+  background: var(--color-primary);
   color: #fff;
   font-size: 0.65rem;
   font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 8px;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 3px;
+  padding: 0 4px;
+  border: 2px solid var(--color-bg);
+  font-family: var(--font-sans);
 }
-
-/* GitHub link */
-.github-link {
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  padding: 0.35rem;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-secondary);
-  transition: border-color 0.2s, color 0.2s;
-}
-.github-link:hover {
-  border-color: var(--color-text);
-  color: var(--color-text);
-}
-
-/* Theme toggle */
-.theme-toggle {
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  padding: 0.35rem;
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color 0.2s;
-}
-.theme-toggle:hover { border-color: var(--color-text); }
 
 /* User avatar + dropdown */
 .user-menu {
   position: relative;
   flex-shrink: 0;
+  margin-left: 0.25rem;
 }
 .avatar-btn {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid var(--color-border);
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   cursor: pointer;
   padding: 0;
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.avatar-btn:hover { border-color: var(--color-text); }
+.avatar-btn:hover {
+  border-color: var(--color-text);
+  transform: scale(1.05);
+}
 .avatar-img {
   width: 100%;
   height: 100%;
@@ -369,78 +422,163 @@ nav > a:hover { color: var(--color-text); }
 .avatar-text {
   color: #fff;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   user-select: none;
 }
 
 .dropdown {
   position: absolute;
-  top: 42px;
+  top: calc(100% + 10px);
   right: 0;
-  min-width: 140px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-md);
+  min-width: 220px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   z-index: 200;
   overflow: hidden;
+  padding: 0.4rem;
+}
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: 0.3rem;
+}
+.dropdown-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.dropdown-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dropdown-username {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+.dropdown-role {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.15rem;
 }
 .dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   width: 100%;
-  padding: 0.7rem 1rem;
+  padding: 0.6rem 0.7rem;
   border: none;
   background: none;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   font-size: 0.9rem;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
   white-space: nowrap;
+  border-radius: var(--radius);
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.dropdown-item:hover { background: var(--color-card-hover); }
+.dropdown-item:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
+}
 .dropdown-item.logout {
-  border-top: 1px solid var(--color-border-light);
-  color: var(--color-text-muted);
+  color: var(--color-danger);
+}
+.dropdown-item.logout:hover {
+  background: var(--color-danger-bg);
+}
+.dropdown-divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 0.3rem 0;
+}
+
+/* Dropdown transition */
+.dropdown-enter-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.dropdown-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
 }
 
 .container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
 }
 
 /* Mobile */
 @media (max-width: 640px) {
+  .navbar-inner { padding: 0 1.1rem; height: 58px; }
   .hamburger { display: flex; }
   nav {
     display: none;
     position: absolute;
-    top: 56px;
+    top: 58px;
     left: 0;
     right: 0;
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    background: var(--color-bg);
+    background: var(--color-bg-elevated);
     border-bottom: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
+    padding: 0.6rem;
   }
   nav.open { display: flex; }
-  nav > a {
-    padding: 0.8rem 1.5rem;
-    border-bottom: 1px solid var(--color-border-light);
+  .nav-link {
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius);
+    font-size: 1rem;
   }
-  .theme-toggle,
-  .github-link {
-    align-self: flex-end;
-    margin: 0.5rem 1.5rem;
+  .nav-link.router-link-exact-active::after { display: none; }
+  .nav-link.router-link-exact-active {
+    background: var(--color-bg-secondary);
+  }
+  .nav-link-cta {
+    justify-content: center;
+    margin: 0.3rem 0;
+  }
+  .nav-icon-btn {
+    align-self: flex-start;
   }
   .user-menu {
-    padding: 0.5rem 1.5rem 0.8rem;
+    padding: 0.5rem 0;
+    margin-left: 0;
   }
   .dropdown {
-    left: 1.5rem;
-    right: auto;
+    left: 0;
+    right: 0;
+    top: auto;
+    position: relative;
+    margin-top: 0.5rem;
+    box-shadow: none;
+    border: 1px solid var(--color-border-light);
+  }
+  .container {
+    padding: 2rem 1.1rem 4rem;
   }
 }
 </style>

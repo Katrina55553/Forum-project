@@ -1,79 +1,140 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+
 :root {
-  --color-bg: #ffffff;
-  --color-bg-secondary: #f8f9fa;
-  --color-text: #222222;
-  --color-text-secondary: #666666;
-  --color-text-muted: #999999;
-  --color-border: #e5e5e5;
-  --color-border-light: #f0f0f0;
-  --color-primary: #1976d2;
-  --color-primary-hover: #1565c0;
-  --color-danger: #d32f2f;
-  --color-danger-bg: #fdecea;
-  --color-code-bg: #f5f5f5;
-  --color-pre-bg: #1e1e1e;
-  --color-card-hover: #fafafa;
-  --color-tag-bg: #f0f0f0;
-  --color-tag-text: #555555;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --radius: 6px;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans SC", sans-serif;
-  --font-mono: "Fira Code", "Cascadia Code", "Consolas", "Monaco", monospace;
+  /* Warm paper palette — light mode */
+  --color-bg: #f7f3ec;
+  --color-bg-elevated: #fffdf8;
+  --color-bg-secondary: #efe9de;
+  --color-text: #1c1a17;
+  --color-text-secondary: #5c544a;
+  --color-text-muted: #9a9082;
+  --color-border: #d9cfbe;
+  --color-border-light: #e8e0d0;
+  --color-primary: #b8431f;
+  --color-primary-hover: #9c371a;
+  --color-primary-soft: #f4e3d8;
+  --color-accent: #2d5a3d;
+  --color-danger: #a02b1c;
+  --color-danger-bg: #f6e1dc;
+  --color-success: #2d5a3d;
+  --color-success-bg: #dceadf;
+  --color-warning: #b8860b;
+  --color-code-bg: #efe9de;
+  --color-pre-bg: #1c1a17;
+  --color-card-hover: #efe9de;
+  --color-tag-bg: #efe9de;
+  --color-tag-text: #5c544a;
+  --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.04);
+  --shadow-md: 0 6px 20px -8px rgba(28, 26, 23, 0.12), 0 2px 6px -2px rgba(28, 26, 23, 0.06);
+  --shadow-lg: 0 20px 50px -20px rgba(28, 26, 23, 0.25), 0 8px 16px -8px rgba(28, 26, 23, 0.08);
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+  --font-display: "Fraunces", "Songti SC", "Noto Serif SC", Georgia, serif;
+  --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
   --max-width: 720px;
+  --grain-opacity: 0.035;
 }
 
 [data-theme="dark"] {
-  --color-bg: #1a1a2e;
-  --color-bg-secondary: #16213e;
-  --color-text: #e0e0e0;
-  --color-text-secondary: #aaaaaa;
-  --color-text-muted: #777777;
-  --color-border: #333355;
-  --color-border-light: #2a2a44;
-  --color-primary: #64b5f6;
-  --color-primary-hover: #90caf9;
-  --color-danger: #ef5350;
-  --color-danger-bg: #3e1a1a;
-  --color-code-bg: #2a2a3e;
-  --color-pre-bg: #0d1117;
-  --color-card-hover: #1f2a44;
-  --color-tag-bg: #2a2a44;
-  --color-tag-text: #cccccc;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* Deep ink palette — dark mode */
+  --color-bg: #161310;
+  --color-bg-elevated: #1f1b16;
+  --color-bg-secondary: #1f1b16;
+  --color-text: #ece4d6;
+  --color-text-secondary: #b3a896;
+  --color-text-muted: #7a7163;
+  --color-border: #3a322a;
+  --color-border-light: #2a2520;
+  --color-primary: #e07a4c;
+  --color-primary-hover: #f09368;
+  --color-primary-soft: #2e1f17;
+  --color-accent: #7eb38c;
+  --color-danger: #e57373;
+  --color-danger-bg: #2e1815;
+  --color-success: #7eb38c;
+  --color-success-bg: #1a2820;
+  --color-warning: #d4a04a;
+  --color-code-bg: #2a2520;
+  --color-pre-bg: #0d0b09;
+  --color-card-hover: #2a2520;
+  --color-tag-bg: #2a2520;
+  --color-tag-text: #b3a896;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 6px 20px -8px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 20px 50px -20px rgba(0, 0, 0, 0.7), 0 8px 16px -8px rgba(0, 0, 0, 0.4);
+  --grain-opacity: 0.05;
 }
 
 * {
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
+}
+
+body {
   font-family: var(--font-sans);
   background: var(--color-bg);
   color: var(--color-text);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
-  transition: background 0.3s, color 0.3s;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.4s ease, color 0.4s ease;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Atmospheric layered background — subtle paper warmth */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--color-primary-soft) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, var(--color-primary-soft) 0%, transparent 50%);
+  opacity: 0.6;
+}
+
+/* Fine grain texture overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
 }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 a:hover {
   color: var(--color-primary-hover);
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
   color: var(--color-text);
-  line-height: 1.3;
+  line-height: 1.2;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
+
+h1 { font-weight: 700; letter-spacing: -0.025em; }
 
 button {
   font-family: var(--font-sans);
+  cursor: pointer;
 }
 
 pre, code {
@@ -84,6 +145,37 @@ img {
   max-width: 100%;
 }
 
+::selection {
+  background: var(--color-primary);
+  color: #fff;
+}
+
 #app {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Custom scrollbar — refined detail */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 10px;
+  border: 2px solid var(--color-bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Focus ring — accessible & on-brand */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
 }
