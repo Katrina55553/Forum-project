@@ -7,7 +7,7 @@
       <p class="nf-subtitle">你访问的页面可能已被移除、重命名，或从未存在。</p>
       <div class="nf-actions">
         <router-link to="/" class="nf-primary">返回首页</router-link>
-        <router-link to="/topics" class="nf-ghost">浏览话题</router-link>
+        <router-link to="/" class="nf-ghost">浏览话题</router-link>
       </div>
     </div>
   </div>

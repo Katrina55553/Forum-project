@@ -133,7 +133,7 @@ frontend/src/
 - **Auth guard**: `router.beforeEach` checks localStorage token for routes with `meta.requiresAuth`, redirects to `/login` with `?redirect=` param
 - **Optional auth**: `get_optional_user` dependency returns User or None — used by topic detail for `is_liked`
 - **Author/Admin actions**: `_author_or_admin` backend helper; frontend shows edit/delete buttons to both author and admin
-- **Theme system**: 26 CSS custom properties (colors, shadows, fonts, spacing). Dark mode toggle in navbar, persisted to localStorage, auto-detects `prefers-color-scheme` on first visit
+- **Theme system**: CSS custom properties for colors, shadows, fonts, spacing; warm paper / deep ink dual palette. Dark mode toggle in navbar, persisted to localStorage, auto-detects `prefers-color-scheme` on first visit
 - **Responsive**: Hamburger menu at ≤640px, sticky navbar, outside-click to close
 - **Loading states**: Skeleton shimmer animations on HomeView (topic list), TopicDetailView (content), TopicEditView (form fields)
 - **Error states**: Retry buttons on load failure across all data-fetching views
@@ -143,7 +143,7 @@ frontend/src/
 - **Likes**: `likes` table (user_id + topic_id composite PK); `like_topic()` handles IntegrityError for idempotency; `is_liked` resolved server-side via optional auth
 - **Notifications**: Created on comment (topic author + parent comment author). Navbar polls `/api/notifications/unread-count` every 30s. Badge shows unread count.
 - **Pagination**: Snake-case params (page, size); returns items, total, page, size, pages
-- **Page titles**: `router.afterEach` sets `document.title` from route meta (format: "Page - Forum")
+- **Page titles**: `router.afterEach` sets `document.title` from route meta (format: "Page · Inkwell")
 - **Login flow**: `login()` stores token + partial user, immediately calls `restoreUser()` to get full user with `id` and `is_admin`
 - **Topic list**: Returns comment_count, likes_count, last_comment_at for each topic; relative time display
 

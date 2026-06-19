@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
         </button>
 
         <a
-          href="https://github.com/Katrina55553/Blog-project"
+          href="https://github.com/Katrina55553/Forum-project"
           target="_blank"
           rel="noopener noreferrer"
           class="nav-icon-btn github-link"
@@ -328,7 +328,7 @@ nav {
   align-items: center;
   gap: 0.3rem;
   background: var(--color-text);
-  color: var(--color-bg) !important;
+  color: var(--color-bg);
   padding: 0.5rem 1rem;
   border-radius: 999px;
   font-weight: 600;

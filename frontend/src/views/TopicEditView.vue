@@ -251,7 +251,7 @@ h1 {
   line-height: 1.7;
   background: transparent;
   color: var(--color-text);
-  resize: none;
+  resize: vertical;
   font-family: var(--font-mono);
   outline: none;
 }
