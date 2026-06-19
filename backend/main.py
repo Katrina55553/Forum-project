@@ -450,7 +450,13 @@ def unread_message_count(current_user: User = Depends(get_current_user), db: Ses
 
 
 @app.get("/api/messages/{username}")
-def get_messages_route(username: str, page: int = 1, size: int = 50, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_messages_route(
+    username: str,
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     result = get_messages_with_user(db, current_user.id, username, page, size)
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")

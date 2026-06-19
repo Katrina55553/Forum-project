@@ -110,14 +110,16 @@ watch(() => auth.user, (newUser, oldUser) => {
   }
 });
 
+function onAuthExpired() {
+  auth.clearAuth();
+  stopPolling();
+}
+
 onMounted(async () => {
   initTheme();
   await auth.restoreUser();
   document.addEventListener("click", onDocClick);
-  window.addEventListener("auth-expired", () => {
-    auth.clearAuth();
-    stopPolling();
-  });
+  window.addEventListener("auth-expired", onAuthExpired);
   if (auth.user) {
     startPolling();
   }
@@ -125,6 +127,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener("click", onDocClick);
+  window.removeEventListener("auth-expired", onAuthExpired);
   if (notifTimer) clearInterval(notifTimer);
 });
 </script>

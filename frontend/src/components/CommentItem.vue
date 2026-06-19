@@ -84,16 +84,17 @@ function initials(name) {
       </div>
     </div>
 
-    <CommentItem
-      v-for="reply in comment.replies"
-      :key="reply.id"
-      :comment="reply"
-      :depth="depth + 1"
-      :auth="auth"
-      @reply-created="emit('reply-created', $event)"
-      @comment-deleted="emit('comment-deleted', $event)"
-      v-if="depth < 10"
-    />
+    <template v-if="depth < 10">
+      <CommentItem
+        v-for="reply in comment.replies"
+        :key="reply.id"
+        :comment="reply"
+        :depth="depth + 1"
+        :auth="auth"
+        @reply-created="emit('reply-created', $event)"
+        @comment-deleted="emit('comment-deleted', $event)"
+      />
+    </template>
   </div>
 </template>
 

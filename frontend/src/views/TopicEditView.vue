@@ -78,6 +78,11 @@ async function handleSubmit() {
   }
 }
 
+// 路由参数变化时重新加载（同组件复用场景）
+watch(() => route.params.id, (newId) => {
+  if (newId) init();
+});
+
 onMounted(init);
 </script>
 

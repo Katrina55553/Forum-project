@@ -37,6 +37,10 @@ function handleFileSelect(e) {
   const file = e.target.files[0];
   if (!file) return;
   avatarFile.value = file;
+  // 释放上一次的 ObjectURL 避免内存泄漏
+  if (avatarPreview.value && avatarPreview.value.startsWith("blob:")) {
+    URL.revokeObjectURL(avatarPreview.value);
+  }
   avatarPreview.value = URL.createObjectURL(file);
 }
 

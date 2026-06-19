@@ -30,8 +30,12 @@ async function fetchNotifications() {
 
 async function goTopic(notif) {
   if (!notif.is_read) {
-    await markRead(notif.id);
-    notif.is_read = true;
+    try {
+      await markRead(notif.id);
+      notif.is_read = true;
+    } catch {
+      // 标记失败不阻塞导航
+    }
   }
   if (notif.topic_id) {
     router.push(`/topic/${notif.topic_id}`);
@@ -39,8 +43,12 @@ async function goTopic(notif) {
 }
 
 async function handleMarkAll() {
-  await markAllRead();
-  items.value.forEach((n) => (n.is_read = true));
+  try {
+    await markAllRead();
+    items.value.forEach((n) => (n.is_read = true));
+  } catch {
+    // 忽略
+  }
 }
 
 function goPage(p) {
@@ -107,7 +115,7 @@ onMounted(fetchNotifications);
         <span v-for="p in pages" :key="p" class="page-num-wrap">
           <button :class="{ current: p === page }" @click="goPage(p)" class="page-num">{{ p }}</button>
         </span>
-        <button :disabled="page >= pages" @click="goPage(pages)" class="page-nav">下一页</button>
+        <button :disabled="page >= pages" @click="goPage(page + 1)" class="page-nav">下一页</button>
       </div>
     </div>
   </div>

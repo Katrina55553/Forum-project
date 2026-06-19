@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { getMessages, sendMessage, markMessagesRead } from "../api/message";
 import { useAuthStore } from "../stores/auth";
@@ -80,6 +80,15 @@ onMounted(() => {
   fetchMessages();
   // 每 10 秒轮询新消息
   pollTimer = setInterval(fetchMessages, 10000);
+});
+
+// 路由参数变化时重新加载（同组件复用场景）
+watch(() => route.params.username, (newName) => {
+  if (newName) {
+    loading.value = true;
+    error.value = "";
+    fetchMessages();
+  }
 });
 
 onUnmounted(() => {

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
@@ -145,6 +145,11 @@ function handleReplyCreated({ parentId, content }) {
 async function handleCommentDeleted() {
   await fetchTopic();
 }
+
+// 路由参数变化时重新加载（同组件复用场景）
+watch(() => route.params.id, (newId) => {
+  if (newId) fetchTopic();
+});
 
 onMounted(fetchTopic);
 </script>

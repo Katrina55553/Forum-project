@@ -180,8 +180,8 @@ class NotificationResponse(BaseModel):
 # ── Message ──
 
 class MessageCreate(BaseModel):
-    receiver: str
-    content: str
+    receiver: str = Field(min_length=1, max_length=20)
+    content: str = Field(min_length=1, max_length=5000)
 
 
 class MessageResponse(BaseModel):

@@ -85,9 +85,13 @@ onMounted(() => {
   fetchTags();
 });
 watch(page, fetchTopics);
+// query 变化时只重置 page，由 page watcher 触发 fetchTopics，避免双重请求竞态
 watch(() => route.query, () => {
-  page.value = 1;
-  fetchTopics();
+  if (page.value !== 1) {
+    page.value = 1;
+  } else {
+    fetchTopics();
+  }
 }, { deep: true });
 </script>
 
@@ -194,7 +198,7 @@ watch(() => route.query, () => {
         <span v-for="p in pages" :key="p" class="page-num-wrap">
           <button :class="{ current: p === page }" @click="goPage(p)" class="page-num">{{ p }}</button>
         </span>
-        <button :disabled="page >= pages" @click="goPage(pages)" class="page-nav">
+        <button :disabled="page >= pages" @click="goPage(page + 1)" class="page-nav">
           下一页
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>

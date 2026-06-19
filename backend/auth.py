@@ -72,7 +72,14 @@ def get_optional_user(
     payload = decode_token(credentials.credentials)
     if payload is None:
         return None
-    return db.query(User).filter_by(id=int(payload.get("sub"))).first()
+    sub = payload.get("sub")
+    if not sub:
+        return None
+    try:
+        user_id = int(sub)
+    except (TypeError, ValueError):
+        return None
+    return db.query(User).filter_by(id=user_id).first()
 
 
 def require_admin(

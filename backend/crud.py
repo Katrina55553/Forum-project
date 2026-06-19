@@ -78,11 +78,22 @@ def create_topic(db: Session, author_id: int, title: str, content: str, tag_name
     return topic
 
 
+def _escape_like(s: str) -> str:
+    """转义 LIKE/ILIKE 的特殊字符 % 和 _"""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str = ""):
     # 先用简单查询计数（避免 joinedload 导致 count 膨胀）
     count_query = db.query(Topic)
     if q:
-        count_query = count_query.filter(or_(Topic.title.ilike(f"%{q}%"), Topic.content.ilike(f"%{q}%")))
+        escaped_q = _escape_like(q)
+        count_query = count_query.filter(
+            or_(
+                Topic.title.ilike(f"%{escaped_q}%", escape="\\"),
+                Topic.content.ilike(f"%{escaped_q}%", escape="\\"),
+            )
+        )
     if tag:
         count_query = count_query.filter(Topic.tags.any(Tag.slug == tag))
     total = count_query.count()
@@ -90,7 +101,13 @@ def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str
     # 再用 joinedload 查询实际数据
     query = db.query(Topic).options(joinedload(Topic.author), joinedload(Topic.tags))
     if q:
-        query = query.filter(or_(Topic.title.ilike(f"%{q}%"), Topic.content.ilike(f"%{q}%")))
+        escaped_q = _escape_like(q)
+        query = query.filter(
+            or_(
+                Topic.title.ilike(f"%{escaped_q}%", escape="\\"),
+                Topic.content.ilike(f"%{escaped_q}%", escape="\\"),
+            )
+        )
     if tag:
         query = query.filter(Topic.tags.any(Tag.slug == tag))
     topics = (
@@ -238,8 +255,6 @@ def create_comment(db: Session, user_id: int, topic_id: int, content: str, paren
     comment = Comment(content=content, topic_id=topic_id, user_id=user_id, parent_id=parent_id)
     db.add(comment)
     db.query(User).filter_by(id=user_id).update({"comment_count": User.comment_count + 1})
-    db.commit()
-    db.refresh(comment)
 
     # Notify topic author (don't self-notify)
     topic = db.query(Topic).filter_by(id=topic_id).first()
@@ -262,7 +277,9 @@ def create_comment(db: Session, user_id: int, topic_id: int, content: str, paren
         )
         db.add(notif)
 
+    # 单事务提交，保证评论与通知的原子性
     db.commit()
+    db.refresh(comment)
     return comment
 
 
