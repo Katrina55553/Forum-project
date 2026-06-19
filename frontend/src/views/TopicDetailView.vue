@@ -165,9 +165,9 @@ onMounted(fetchTopic);
 
     <article v-else>
       <div class="title-section">
-        <div v-if="topic.is_pinned || topic.is_featured" class="badges">
-          <span v-if="topic.is_pinned" class="badge pin">置顶</span>
-          <span v-if="topic.is_featured" class="badge featured">精华</span>
+        <div class="badges">
+          <span v-if="topic.is_pinned" class="badge pin">📌 置顶</span>
+          <span v-if="topic.is_featured" class="badge featured">⭐ 精华</span>
         </div>
         <h1>{{ topic.title }}</h1>
       </div>
@@ -178,46 +178,30 @@ onMounted(fetchTopic);
           :to="{ name: 'home', query: { tag: tag.slug } }"
           class="topic-tag"
         >
-          #{{ tag.name }}
+          {{ tag.name }}
         </router-link>
       </div>
       <div class="meta">
-        <router-link :to="`/user/${topic.author?.username}`" class="author">
-          <span class="author-avatar">{{ topic.author?.username?.[0]?.toUpperCase() }}</span>
-          {{ topic.author?.username }}
-        </router-link>
-        <span class="meta-dot">·</span>
-        <span>{{ new Date(topic.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) }}</span>
-        <span class="meta-dot">·</span>
-        <span class="meta-stat">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          {{ topic.view_count || 0 }}
-        </span>
+        <router-link :to="`/user/${topic.author?.username}`" class="author">{{ topic.author?.username }}</router-link>
+        <span>{{ new Date(topic.created_at).toLocaleDateString() }}</span>
+        <span>👁️ {{ topic.view_count || 0 }}</span>
         <button
           class="like-btn"
           :class="{ liked: isLiked() }"
           :disabled="likeLoading"
           @click="handleLike"
         >
-          <svg v-if="isLiked()" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-          {{ topic.likes_count || 0 }}
+          {{ isLiked() ? '❤️' : '🤍' }} {{ topic.likes_count || 0 }}
         </button>
       </div>
       <div v-if="isAuthor || isAdmin" class="author-actions">
-        <button class="btn-action btn-edit" @click="handleEdit">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          编辑
-        </button>
-        <button class="btn-action btn-delete" @click="handleDelete">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          删除
-        </button>
+        <button class="btn-edit" @click="handleEdit">编辑</button>
+        <button class="btn-delete" @click="handleDelete">删除</button>
         <template v-if="isAdmin">
-          <button class="btn-action btn-pin" :class="{ active: topic.is_pinned }" @click="handlePin">
+          <button class="btn-pin" :class="{ active: topic.is_pinned }" @click="handlePin">
             {{ topic.is_pinned ? '取消置顶' : '置顶' }}
           </button>
-          <button class="btn-action btn-feature" :class="{ active: topic.is_featured }" @click="handleFeature">
+          <button class="btn-feature" :class="{ active: topic.is_featured }" @click="handleFeature">
             {{ topic.is_featured ? '取消精华' : '精华' }}
           </button>
         </template>
@@ -225,28 +209,19 @@ onMounted(fetchTopic);
       <div class="content" v-html="renderedContent"></div>
 
       <section class="comments">
-        <h3>
-          <span>回复</span>
-          <span class="comments-count">{{ topic.comments?.length || 0 }}</span>
-        </h3>
+        <h3>回复 ({{ topic.comments?.length || 0 }})</h3>
 
         <div v-if="auth.user" class="comment-form">
-          <div class="comment-avatar">
-            <img v-if="auth.user.avatar" :src="auth.user.avatar" />
-            <span v-else>{{ auth.user.username?.[0]?.toUpperCase() }}</span>
-          </div>
-          <div class="comment-form-body">
-            <textarea
-              v-model="commentText"
-              placeholder="写下你的回复..."
-              rows="3"
-            ></textarea>
-            <div class="comment-actions">
-              <button :disabled="commentLoading || !commentText.trim()" @click="handleComment()">
-                {{ commentLoading ? "提交中..." : "发表回复" }}
-              </button>
-              <span v-if="commentError" class="error">{{ commentError }}</span>
-            </div>
+          <textarea
+            v-model="commentText"
+            placeholder="写下你的回复..."
+            rows="3"
+          ></textarea>
+          <div class="comment-actions">
+            <button :disabled="commentLoading" @click="handleComment()">
+              {{ commentLoading ? "提交中..." : "发表回复" }}
+            </button>
+            <span v-if="commentError" class="error">{{ commentError }}</span>
           </div>
         </div>
         <p v-else class="login-hint">
@@ -263,31 +238,27 @@ onMounted(fetchTopic);
             @comment-deleted="handleCommentDeleted"
           />
         </div>
-        <p v-else class="state">还没有回复，来说点什么吧。</p>
+        <p v-else class="state">暂无回复</p>
       </section>
     </article>
   </div>
 </template>
 
 <style scoped>
-.topic-detail { max-width: 720px; margin: 0 auto; }
-.state { text-align: center; padding: 3rem; color: var(--color-text-muted); }
+.topic-detail { max-width: 700px; margin: 0 auto; }
+.state { text-align: center; padding: 2rem; color: var(--color-text-muted); }
 .error { color: var(--color-danger); }
 .btn-retry {
-  margin-top: 0.8rem;
-  padding: 0.5rem 1.4rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 1.2rem;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg-elevated);
+  border-radius: var(--radius);
+  background: var(--color-bg);
   color: var(--color-text);
   cursor: pointer;
-  font-size: 0.88rem;
-  transition: all 0.2s ease;
+  font-size: 0.9rem;
 }
-.btn-retry:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
+.btn-retry:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 .skeleton-detail {
   display: flex;
@@ -295,10 +266,9 @@ onMounted(fetchTopic);
   gap: 1rem;
 }
 .skeleton-line {
-  background: linear-gradient(90deg, var(--color-border-light) 0%, var(--color-border) 50%, var(--color-border-light) 100%);
-  background-size: 200% 100%;
+  background: var(--color-border);
   border-radius: 4px;
-  animation: shimmer 1.6s infinite linear;
+  animation: shimmer 1.5s infinite;
 }
 .skeleton-line.w-70 { width: 70%; }
 .skeleton-line.w-40 { width: 40%; }
@@ -307,335 +277,175 @@ onMounted(fetchTopic);
 .skeleton-line.h-32 { height: 32px; }
 .skeleton-line.h-14 { height: 14px; }
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.4; }
 }
 
 .title-section {
-  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  margin-bottom: 0.5rem;
 }
 .title-section .badges {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.8rem;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
 }
 .badge {
-  padding: 0.2rem 0.65rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 4px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
-  letter-spacing: 0.02em;
 }
 .badge.pin {
   background: var(--color-primary);
   color: #fff;
 }
 .badge.featured {
-  background: var(--color-warning);
+  background: #f59e0b;
   color: #fff;
 }
-h1 {
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.4rem);
-  font-weight: 700;
-  margin: 0 0 0.5rem;
-  color: var(--color-text);
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+h1 { font-size: 1.8rem; margin-bottom: 0; color: var(--color-text); }
+.meta {
+  display: flex;
+  gap: 0.8rem;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
 }
+.author { color: var(--color-text-muted); text-decoration: none; }
+.author:hover { color: var(--color-primary); }
 
 .topic-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.2rem;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
 }
 .topic-tag {
-  padding: 0.2rem 0;
-  background: none;
-  border: none;
-  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: all 0.2s;
 }
 .topic-tag:hover {
+  border-color: var(--color-primary);
   color: var(--color-primary);
 }
-
-.meta {
-  display: flex;
-  gap: 0.6rem;
-  color: var(--color-text-muted);
-  font-size: 0.88rem;
-  margin-bottom: 1.8rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border-light);
-  flex-wrap: wrap;
-  align-items: center;
-}
-.author {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--color-text-secondary);
-  text-decoration: none;
-  font-weight: 600;
-  transition: color 0.2s ease;
-}
-.author:hover { color: var(--color-primary); }
-.author-avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-.meta-dot { opacity: 0.5; }
-.meta-stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
 .like-btn {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
   background: none;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius);
+  padding: 0.2rem 0.6rem;
   cursor: pointer;
-  font-size: 0.88rem;
-  color: var(--color-text-secondary);
-  font-variant-numeric: tabular-nums;
-  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
 }
-.like-btn:hover {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-.like-btn.liked {
-  border-color: var(--color-danger);
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
-}
+.like-btn:hover { border-color: var(--color-danger); }
+.like-btn.liked { border-color: var(--color-danger); }
 .like-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .author-actions {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
 }
-.btn-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.95rem;
+.author-actions button {
+  padding: 0.3rem 0.9rem;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg-elevated);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-.btn-action:hover {
-  border-color: var(--color-text);
+  border-radius: 3px;
+  background: var(--color-bg);
   color: var(--color-text);
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 .btn-edit:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .btn-delete { color: var(--color-danger); }
 .btn-delete:hover { background: var(--color-danger-bg); border-color: var(--color-danger); }
-.btn-pin.active { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-primary-soft); }
-.btn-feature.active { border-color: var(--color-warning); color: var(--color-warning); background: rgba(184, 134, 11, 0.1); }
+.btn-pin { color: var(--color-text-muted); }
+.btn-pin:hover, .btn-pin.active { border-color: var(--color-primary); color: var(--color-primary); }
+.btn-feature { color: var(--color-text-muted); }
+.btn-feature:hover, .btn-feature.active { border-color: #f59e0b; color: #f59e0b; }
 
 .content {
-  line-height: 1.85;
+  line-height: 1.8;
   font-size: 1.05rem;
   color: var(--color-text);
-  font-family: var(--font-sans);
 }
-.content :deep(h1),
-.content :deep(h2),
-.content :deep(h3) {
-  font-family: var(--font-display);
-  margin-top: 1.8em;
-  margin-bottom: 0.6em;
-  letter-spacing: -0.02em;
-}
-.content :deep(p) { margin: 1em 0; }
 .content :deep(pre) {
   background: var(--color-pre-bg);
-  padding: 1.2rem 1.4rem;
-  border-radius: var(--radius-lg);
+  padding: 1rem;
+  border-radius: var(--radius);
   overflow-x: auto;
-  font-size: 0.88rem;
-  line-height: 1.6;
-  margin: 1.5em 0;
 }
 .content :deep(code) {
   font-family: var(--font-mono);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 .content :deep(p > code) {
   background: var(--color-code-bg);
-  padding: 0.15rem 0.45rem;
-  border-radius: 4px;
-  color: var(--color-primary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
 }
 .content :deep(blockquote) {
   border-left: 3px solid var(--color-primary);
-  margin: 1.5em 0;
-  padding: 0.5em 1.2em;
+  margin-left: 0;
+  padding-left: 1rem;
   color: var(--color-text-secondary);
-  font-style: italic;
-  background: var(--color-bg-secondary);
-  border-radius: 0 var(--radius) var(--radius) 0;
 }
-.content :deep(img) {
-  max-width: 100%;
-  border-radius: var(--radius-lg);
-  margin: 1.5em 0;
-}
-.content :deep(ul),
-.content :deep(ol) { padding-left: 1.5em; margin: 1em 0; }
-.content :deep(li) { margin: 0.4em 0; }
-.content :deep(a) {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-decoration-color: var(--color-primary-soft);
-  text-underline-offset: 3px;
-  transition: text-decoration-color 0.2s ease;
-}
-.content :deep(a:hover) { text-decoration-color: var(--color-primary); }
+.content :deep(img) { max-width: 100%; }
 .content :deep(table) {
   border-collapse: collapse;
   width: 100%;
-  margin: 1.5em 0;
-  font-size: 0.95rem;
 }
-.content :deep(th),
-.content :deep(td) {
+.content :deep(th), .content :deep(td) {
   border: 1px solid var(--color-border);
-  padding: 0.6em 0.9em;
+  padding: 0.5rem;
   text-align: left;
-}
-.content :deep(th) {
-  background: var(--color-bg-secondary);
-  font-weight: 600;
-}
-.content :deep(hr) {
-  border: none;
-  border-top: 1px solid var(--color-border-light);
-  margin: 2em 0;
 }
 
 .comments {
-  margin-top: 3.5rem;
-  border-top: 1px solid var(--color-border-light);
-  padding-top: 2rem;
+  margin-top: 3rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1.5rem;
 }
-.comments h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1.5rem;
-  color: var(--color-text);
-  font-size: 1.3rem;
-}
-.comments-count {
-  font-family: var(--font-sans);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  background: var(--color-bg-secondary);
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  font-variant-numeric: tabular-nums;
-}
-.login-hint {
-  font-size: 0.92rem;
-  color: var(--color-text-muted);
-  padding: 1.2rem;
-  text-align: center;
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-}
-
-.comment-form {
-  display: flex;
-  gap: 0.8rem;
-  margin-bottom: 2rem;
-  align-items: flex-start;
-}
-.comment-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.95rem;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.comment-form-body { flex: 1; min-width: 0; }
+.comments h3 { margin-bottom: 1rem; color: var(--color-text); }
+.login-hint { font-size: 0.9rem; color: var(--color-text-muted); }
 .comment-form textarea {
   width: 100%;
-  padding: 0.8rem 1rem;
+  padding: 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   resize: vertical;
   font-size: 0.95rem;
   box-sizing: border-box;
-  background: var(--color-bg-elevated);
+  background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-sans);
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  min-height: 80px;
-}
-.comment-form textarea::placeholder { color: var(--color-text-muted); }
-.comment-form textarea:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px var(--color-primary-soft);
 }
 .comment-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 .comment-actions button {
-  padding: 0.55rem 1.4rem;
+  padding: 0.5rem 1.2rem;
   background: var(--color-text);
   color: var(--color-bg);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.comment-actions button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.comment-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.comment-actions button:disabled { opacity: 0.5; }
 .comment-list { margin-top: 1rem; }
 </style>

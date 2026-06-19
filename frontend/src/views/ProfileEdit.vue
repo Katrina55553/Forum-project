@@ -94,13 +94,10 @@ async function handleChangePassword() {
 
 <template>
   <div class="profile-edit">
-    <header class="edit-header">
-      <p class="edit-eyebrow">个人资料 · PROFILE</p>
-      <h1>编辑资料</h1>
-    </header>
+    <h1>编辑资料</h1>
 
-    <form @submit.prevent="handleSave" class="edit-form card">
-      <div v-if="success" class="success">✓ 保存成功</div>
+    <form @submit.prevent="handleSave" class="edit-form">
+      <div v-if="success" class="success">保存成功</div>
       <div v-if="error" class="error">{{ error }}</div>
 
       <!-- 头像上传区域 -->
@@ -140,18 +137,20 @@ async function handleChangePassword() {
       </div>
     </form>
 
-    <h2 class="section-title">修改密码</h2>
-    <form @submit.prevent="handleChangePassword" class="edit-form card">
-      <div v-if="pwSuccess" class="success">✓ 密码已更新</div>
+    <hr class="divider" />
+
+    <h2>修改密码</h2>
+    <form @submit.prevent="handleChangePassword" class="edit-form">
+      <div v-if="pwSuccess" class="success">密码已更新</div>
       <div v-if="pwError" class="error">{{ pwError }}</div>
 
       <label>
         <span>旧密码</span>
-        <input v-model="oldPassword" type="password" autocomplete="current-password" placeholder="输入当前密码" />
+        <input v-model="oldPassword" type="password" autocomplete="current-password" />
       </label>
       <label>
         <span>新密码</span>
-        <input v-model="newPassword" type="password" autocomplete="new-password" placeholder="设置新密码" />
+        <input v-model="newPassword" type="password" autocomplete="new-password" />
       </label>
       <div class="form-actions">
         <button type="submit" :disabled="pwSaving" class="btn-save">
@@ -163,115 +162,58 @@ async function handleChangePassword() {
 </template>
 
 <style scoped>
-.profile-edit { max-width: 540px; margin: 0 auto; }
-
-.edit-header { margin-bottom: 2rem; }
-.edit-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  margin: 0 0 0.4rem;
-  font-weight: 500;
-}
-h1 {
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  font-weight: 700;
-  margin: 0;
-  color: var(--color-text);
-  letter-spacing: -0.025em;
-}
-
-.card {
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-xl);
-  padding: 1.8rem;
-  box-shadow: var(--shadow-sm);
-}
-.edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
+.profile-edit { max-width: 480px; margin: 0 auto; }
+h1 { margin-bottom: 1.5rem; color: var(--color-text); }
+.edit-form { display: flex; flex-direction: column; gap: 1rem; }
 .success {
-  color: var(--color-success);
-  background: var(--color-success-bg);
-  padding: 0.7rem 0.9rem;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 0.5rem;
   border-radius: var(--radius);
-  font-size: 0.88rem;
-  border-left: 3px solid var(--color-success);
-  font-weight: 500;
+  font-size: 0.9rem;
 }
 .error {
   color: var(--color-danger);
   background: var(--color-danger-bg);
-  padding: 0.7rem 0.9rem;
+  padding: 0.5rem;
   border-radius: var(--radius);
-  font-size: 0.88rem;
-  border-left: 3px solid var(--color-danger);
-}
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  font-size: 0.9rem;
 }
 label span {
-  font-size: 0.82rem;
-  font-weight: 600;
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
   color: var(--color-text-secondary);
-  letter-spacing: 0.02em;
 }
 input, textarea {
   width: 100%;
-  padding: 0.75rem 0.95rem;
+  padding: 0.6rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  font-size: 0.95rem;
+  font-size: 1rem;
   box-sizing: border-box;
-  font-family: var(--font-sans);
+  font-family: inherit;
   background: var(--color-bg);
   color: var(--color-text);
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-input::placeholder, textarea::placeholder { color: var(--color-text-muted); }
-input:focus, textarea:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px var(--color-primary-soft);
-}
-textarea { resize: vertical; line-height: 1.6; }
+textarea { resize: vertical; }
 .form-actions {
   display: flex;
-  gap: 0.8rem;
+  gap: 1rem;
   align-items: center;
-  margin-top: 0.3rem;
+  margin-top: 0.5rem;
 }
 .btn-save {
-  padding: 0.7rem 1.8rem;
+  padding: 0.6rem 2rem;
   background: var(--color-text);
   color: var(--color-bg);
   border: none;
-  border-radius: 999px;
-  font-size: 0.92rem;
-  font-weight: 600;
+  border-radius: var(--radius);
+  font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.btn-save:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-.btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-cancel {
-  color: var(--color-text-muted);
-  text-decoration: none;
-  font-size: 0.92rem;
-  padding: 0.7rem 1rem;
-  transition: color 0.2s ease;
-}
+.btn-save:disabled { opacity: 0.5; }
+.btn-cancel { color: var(--color-text-muted); text-decoration: none; font-size: 0.95rem; }
 .btn-cancel:hover { color: var(--color-text); }
 
 .avatar-section {
@@ -281,19 +223,17 @@ textarea { resize: vertical; line-height: 1.6; }
   gap: 1rem;
   padding: 1.5rem;
   background: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
 }
 .avatar-preview {
-  width: 110px;
-  height: 110px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background: var(--color-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid var(--color-bg-elevated);
-  box-shadow: var(--shadow-md);
 }
 .avatar-preview img {
   width: 100%;
@@ -301,10 +241,9 @@ textarea { resize: vertical; line-height: 1.6; }
   object-fit: cover;
 }
 .avatar-initial {
-  font-family: var(--font-display);
-  font-size: 2.6rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
 }
 .avatar-actions {
   display: flex;
@@ -314,46 +253,37 @@ textarea { resize: vertical; line-height: 1.6; }
 }
 .btn-upload {
   display: inline-block;
-  padding: 0.55rem 1.3rem;
+  padding: 0.5rem 1.2rem;
   background: var(--color-text);
   color: var(--color-bg);
-  border-radius: 999px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 0.9rem;
 }
-.btn-upload:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
+.btn-upload:hover { opacity: 0.9; }
 .hint {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
   margin: 0;
 }
 .url-input {
   width: 100%;
-  margin-top: 0.3rem;
+  margin-top: 0.5rem;
 }
 .url-input summary {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   color: var(--color-text-muted);
   cursor: pointer;
-  text-align: center;
-  transition: color 0.2s ease;
 }
 .url-input summary:hover { color: var(--color-text); }
 .url-input input {
-  margin-top: 0.6rem;
+  margin-top: 0.5rem;
 }
 
-.section-title {
-  font-family: var(--font-display);
-  color: var(--color-text);
-  font-size: 1.3rem;
-  font-weight: 600;
-  margin: 2.5rem 0 1rem;
-  letter-spacing: -0.01em;
+.divider {
+  margin: 2.5rem 0 1.5rem;
+  border: none;
+  border-top: 1px solid var(--color-border);
 }
+h2 { color: var(--color-text); font-size: 1.2rem; margin-bottom: 1rem; }
 </style>

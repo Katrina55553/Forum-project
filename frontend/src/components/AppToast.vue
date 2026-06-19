@@ -7,16 +7,6 @@ function remove(id) {
   const idx = toasts.findIndex((t) => t.id === id);
   if (idx > -1) toasts.splice(idx, 1);
 }
-
-function iconFor(type) {
-  if (type === "success") {
-    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-  }
-  if (type === "error") {
-    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-  }
-  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-}
 </script>
 
 <template>
@@ -30,8 +20,7 @@ function iconFor(type) {
           :class="t.type"
           @click="remove(t.id)"
         >
-          <span class="toast-icon" v-html="iconFor(t.type)"></span>
-          <span class="toast-message">{{ t.message }}</span>
+          {{ t.message }}
         </div>
       </TransitionGroup>
     </div>
@@ -41,45 +30,30 @@ function iconFor(type) {
 <style>
 .toast-container {
   position: fixed;
-  top: 88px;
-  right: 24px;
+  top: 80px;
+  right: 20px;
   z-index: 9999;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   pointer-events: none;
 }
 .toast-item {
   pointer-events: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 1.1rem;
-  border-radius: 999px;
-  font-size: 0.88rem;
-  font-weight: 500;
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
   cursor: pointer;
-  max-width: 360px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  max-width: 320px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
-.toast-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.toast-message {
-  flex: 1;
-}
 .toast-item.success {
-  background: var(--color-success);
+  background: #16a34a;
   color: #fff;
 }
 .toast-item.error {
-  background: var(--color-danger);
+  background: #dc2626;
   color: #fff;
 }
 .toast-item.info {
@@ -88,17 +62,17 @@ function iconFor(type) {
 }
 
 .toast-enter-active {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s ease;
 }
 .toast-leave-active {
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 .toast-enter-from {
-  transform: translateX(120%);
+  transform: translateX(100%);
   opacity: 0;
 }
 .toast-leave-to {
-  transform: translateX(120%);
+  transform: translateX(100%);
   opacity: 0;
 }
 </style>

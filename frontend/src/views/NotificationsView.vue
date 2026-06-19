@@ -64,12 +64,8 @@ onMounted(fetchNotifications);
 <template>
   <div class="notifications">
     <div class="notif-header">
-      <div>
-        <p class="page-eyebrow">通知 · INBOX</p>
-        <h1>通知</h1>
-      </div>
+      <h1>通知</h1>
       <button v-if="items.some((n) => !n.is_read)" class="btn-mark-all" @click="handleMarkAll">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         全部已读
       </button>
     </div>
@@ -79,10 +75,7 @@ onMounted(fetchNotifications);
       <p>{{ error }}</p>
       <button class="btn-retry" @click="fetchNotifications">重试</button>
     </div>
-    <div v-else-if="items.length === 0" class="state empty">
-      <div class="empty-mark">✦</div>
-      <p>暂无通知</p>
-    </div>
+    <div v-else-if="items.length === 0" class="state">暂无通知</div>
 
     <div v-else class="notif-list">
       <div
@@ -92,208 +85,91 @@ onMounted(fetchNotifications);
         :class="{ unread: !n.is_read }"
         @click="goTopic(n)"
       >
-        <div class="notif-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <div class="notif-body">
-          <span class="notif-text">有人回复了你的帖子</span>
-          <span class="notif-time">{{ formatTime(n.created_at) }}</span>
-        </div>
-        <span v-if="!n.is_read" class="unread-dot"></span>
+        <span class="notif-type">💬</span>
+        <span class="notif-text">有人回复了你的帖子</span>
+        <span class="notif-time">{{ formatTime(n.created_at) }}</span>
       </div>
 
       <div v-if="pages > 1" class="pagination">
-        <button :disabled="page <= 1" @click="goPage(page - 1)" class="page-nav">上一页</button>
-        <span v-for="p in pages" :key="p" class="page-num-wrap">
-          <button :class="{ current: p === page }" @click="goPage(p)" class="page-num">{{ p }}</button>
+        <button :disabled="page <= 1" @click="goPage(page - 1)">上一页</button>
+        <span v-for="p in pages" :key="p">
+          <button :class="{ current: p === page }" @click="goPage(p)">{{ p }}</button>
         </span>
-        <button :disabled="page >= pages" @click="goPage(pages)" class="page-nav">下一页</button>
+        <button :disabled="page >= pages" @click="goPage(pages)">下一页</button>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.notifications { max-width: 720px; margin: 0 auto; }
+.notifications { max-width: 700px; margin: 0 auto; }
 .notif-header {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--color-border-light);
-}
-.page-eyebrow {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  margin: 0 0 0.3rem;
-  font-weight: 500;
-}
-.notif-header h1 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.2rem);
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: -0.025em;
-}
-.btn-mark-all {
-  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1.1rem;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+.notif-header h1 { margin: 0; color: var(--color-text); }
+.btn-mark-all {
+  padding: 0.4rem 1rem;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg-elevated);
-  color: var(--color-text-secondary);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
   cursor: pointer;
   font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
 }
-.btn-mark-all:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
+.btn-mark-all:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
-.state {
-  text-align: center;
-  padding: 4rem 1rem;
-  color: var(--color-text-muted);
-}
-.state.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-.empty-mark {
-  font-size: 2.5rem;
-  color: var(--color-primary);
-  opacity: 0.5;
-}
+.state { text-align: center; padding: 2rem; color: var(--color-text-muted); }
 .error { color: var(--color-danger); }
 .btn-retry {
-  margin-top: 0.8rem;
-  padding: 0.5rem 1.4rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 1.2rem;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: var(--color-bg-elevated);
+  border-radius: var(--radius);
+  background: var(--color-bg);
   color: var(--color-text);
   cursor: pointer;
-  font-size: 0.88rem;
-  transition: all 0.2s ease;
+  font-size: 0.9rem;
 }
-.btn-retry:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
+.btn-retry:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
-.notif-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.notif-list { display: flex; flex-direction: column; gap: 0.3rem; }
 .notif-item {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 1rem 1.2rem;
-  background: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.notif-item:hover {
-  border-color: var(--color-border);
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-.notif-item.unread {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary-soft);
-}
-.notif-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  gap: 0.6rem;
+  padding: 0.9rem 1.2rem;
   background: var(--color-bg-secondary);
-  color: var(--color-text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.2s;
 }
-.notif-item.unread .notif-icon {
-  background: var(--color-primary);
-  color: #fff;
+.notif-item:hover { background: var(--color-card-hover); }
+.notif-item.unread {
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-card-hover);
 }
-.notif-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-.notif-text {
-  font-size: 0.92rem;
-  color: var(--color-text);
-  font-weight: 500;
-}
-.notif-time {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-}
-.unread-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  flex-shrink: 0;
-}
+.notif-type { font-size: 1.1rem; flex-shrink: 0; }
+.notif-text { flex: 1; font-size: 0.95rem; color: var(--color-text); }
+.notif-time { font-size: 0.8rem; color: var(--color-text-muted); flex-shrink: 0; }
 
 .pagination {
   display: flex;
   justify-content: center;
-  align-items: center;
   gap: 0.4rem;
-  margin-top: 2.5rem;
+  margin-top: 2rem;
 }
-.page-num-wrap { display: inline-flex; }
-.page-num {
-  width: 38px;
-  height: 38px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  background: none;
-  color: var(--color-text-secondary);
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-.page-num:hover { background: var(--color-bg-secondary); color: var(--color-text); }
-.page-num.current {
-  background: var(--color-text);
-  color: var(--color-bg);
-  font-weight: 600;
-}
-.page-nav {
-  padding: 0.5rem 1rem;
+.pagination button {
+  padding: 0.4rem 0.8rem;
   border: 1px solid var(--color-border);
-  background: var(--color-bg-elevated);
-  color: var(--color-text-secondary);
-  border-radius: 999px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
 }
-.page-nav:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-.page-nav:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination button.current { background: var(--color-text); color: var(--color-bg); border-color: var(--color-text); }
 </style>

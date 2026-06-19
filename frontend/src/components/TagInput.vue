@@ -54,10 +54,8 @@ function addSuggestion(tag) {
   <div class="tag-input">
     <div class="tags-display">
       <span v-for="(tag, index) in tags" :key="index" class="tag">
-        <span class="tag-hash">#</span>{{ tag }}
-        <button type="button" @click="removeTag(index)" class="tag-remove" aria-label="移除标签">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+        {{ tag }}
+        <button type="button" @click="removeTag(index)" class="tag-remove">&times;</button>
       </span>
       <input
         v-model="input"
@@ -68,7 +66,7 @@ function addSuggestion(tag) {
       />
     </div>
     <div v-if="suggestions.length" class="suggestions">
-      <span class="suggestions-label">热门标签</span>
+      <span class="suggestions-label">热门标签：</span>
       <button
         v-for="tag in suggestions"
         :key="tag.id"
@@ -77,7 +75,7 @@ function addSuggestion(tag) {
         :class="{ active: tags.includes(tag.name) }"
         @click="addSuggestion(tag)"
       >
-        #{{ tag.name }}
+        {{ tag.name }}
       </button>
     </div>
   </div>
@@ -87,72 +85,54 @@ function addSuggestion(tag) {
 .tag-input {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 .tags-display {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  padding: 0.55rem 0.6rem;
+  padding: 0.5rem;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius);
   background: var(--color-bg);
-  min-height: 46px;
+  min-height: 42px;
   align-items: center;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .tags-display:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.4rem 0.25rem 0.55rem;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  font-family: var(--font-mono);
-}
-.tag-hash {
-  opacity: 0.6;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.85rem;
 }
 .tag-remove {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
   background: none;
   border: none;
-  color: var(--color-primary);
+  color: #fff;
   cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
   padding: 0;
-  margin-left: 0.1rem;
-  border-radius: 50%;
-  opacity: 0.6;
-  transition: opacity 0.2s, background 0.2s;
+  opacity: 0.7;
 }
 .tag-remove:hover {
   opacity: 1;
-  background: rgba(184, 67, 31, 0.2);
 }
 .tag-field {
   flex: 1;
-  min-width: 140px;
+  min-width: 120px;
   border: none;
   outline: none;
   background: transparent;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   padding: 0.2rem;
   color: var(--color-text);
-  font-family: inherit;
-}
-.tag-field::placeholder {
-  color: var(--color-text-muted);
 }
 .suggestions {
   display: flex;
@@ -161,28 +141,21 @@ function addSuggestion(tag) {
   align-items: center;
 }
 .suggestions-label {
-  font-size: 0.72rem;
-  font-family: var(--font-mono);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
-  margin-right: 0.2rem;
 }
 .suggestion-tag {
-  padding: 0.25rem 0.7rem;
+  padding: 0.2rem 0.6rem;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--color-text-secondary);
+  border-radius: 4px;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: 0.8rem;
-  font-family: var(--font-mono);
-  transition: all 0.2s;
 }
 .suggestion-tag:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
-  background: var(--color-primary-soft);
 }
 .suggestion-tag.active {
   background: var(--color-primary);
