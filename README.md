@@ -150,11 +150,11 @@ forum-project/
 
 | 目录 | 文件 |
 | ----------- | ----------------------------------------------------------------------------------- |
-| `views/` | HomeView · TopicDetailView · TopicEditView · MessagesView · ChatView · NotificationsView(未挂路由) · LoginView · RegisterView · UserProfile · ProfileEdit · NotFoundView |
+| `views/` | HomeView · TopicDetailView · TopicEditView · MessagesView · ChatView · LoginView · RegisterView · UserProfile · ProfileEdit · NotFoundView |
 | `components/` | AppToast · ConfirmDialog · BackToTop · CommentItem · TagInput |
 | `api/` | client · auth · topic · tag · comment · like · notification · message · upload · user |
 
-> `NotificationsView.vue` 目前是**未挂载的死代码**：`/notifications` 已重定向到 `/messages`，通知与私信合并进统一收件箱（`MessagesView`）。
+> `/notifications` 已重定向到 `/messages`：通知与私信合并进统一收件箱（`MessagesView`）。曾经的死代码 `NotificationsView.vue` 已于 2026-09-26 删除。
 
 ## Features / 功能
 

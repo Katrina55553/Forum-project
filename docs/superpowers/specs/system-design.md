@@ -278,7 +278,7 @@ api/client.js 响应拦截器
 | TagInput | `v-model` 标签编辑器，回车/逗号添加，Backspace 删除，热门标签建议 |
 | AppToast / ConfirmDialog / BackToTop | 全局交互组件，在 App.vue 挂载一次 |
 
-`NotificationsView.vue` 仍留在 `views/` 但**没有挂路由**——通知已并入统一收件箱，它属于待清理的死代码。
+`NotificationsView.vue` 曾是未挂路由的死代码（通知已并入统一收件箱），已于 2026-09-26 从 `views/` 删除。
 
 ### 主题系统
 
@@ -342,7 +342,7 @@ JWT 的 `sub` 声明写入时是 `str(user.id)`，读出时显式 `int()` 转换
 
 头像上传的限制逐层收紧：声明 content-type 在白名单 → 读取字节数 ≤2MB → 校验图片魔术字节 → 以 UUID 重命名落盘（避免原始文件名带来的路径穿越与覆盖）。文件存 `backend/uploads/avatars/`，通过 `app.mount("/uploads", StaticFiles(...))` 静态托管，nginx 与 vite 各自反代该前缀。
 
-> ⚠️ 当前实现中的魔术字节校验调用了不存在的 `imghdr.from_buffer()`，该端点必然 500。详见第 7 节。
+> 魔术字节校验由 `main.py` 的 `_detect_image_type()` 实现（jpeg/png/gif/webp 的文件头比对）。早期版本误用了不存在的 `imghdr.from_buffer()` 导致端点必然 500，2026-09-26 已改为纯手动识别，不再依赖 `imghdr`（该模块在 Python 3.13 已移除）。
 
 ## 6. 安全
 
@@ -382,33 +382,29 @@ from pydantic import BaseModel, Field, field_validator
 
 修复后实测：`import main` 通过（35 条路由），`MessageCreate` 对空字符串与超长字符串均正确抛 `ValidationError`。
 
-### P1 — 功能性缺陷
+**2. 头像上传端点必然 500（imghdr）** —— 2026-09-26 修复
 
-**2. 头像上传端点必然 500**
+`upload_avatar` 原来调用不存在的 `imghdr.from_buffer(content)`（`imghdr` 只有 `what()`，且该模块在 Python 3.13 已移除），端点必然 500。已改为 `main.py` 模块级的 `_detect_image_type()`，手动比对 jpeg/png/gif/webp 魔术字节，不引入 Pillow / filetype 等新依赖。
 
-`upload_avatar` 调用 `imghdr.from_buffer(content)`，但 `imghdr` 模块只提供 `what(file, h=None)`，从无 `from_buffer`。且 `imghdr` 自 Python 3.11 起废弃、3.13 已移除，`what()` 同样是死路。
+**3. `get_topics()` / `get_topics_by_user()` 的 N+1 查询** —— 2026-09-26 修复
 
-修复方向：改用 `imghdr.what(None, content)` 仅能解决眼前报错，正解是换 Pillow（`Image.open(BytesIO(content)).format`）或 `filetype` 库。注意 `import imghdr` 写在处理函数内部，所以启动期不报错、只在请求时暴露。
+列表原来每条帖子额外发 3 次查询（评论数、点赞数、最后评论时间），一页 10 条即 30+ 次往返。已抽出 `crud._topic_stats()`，对 `comments`、`likes` 做 `GROUP BY` 聚合批量查询，一页固定 3 次往返。
 
-**3. `crud.get_topics()` 的 N+1 查询**
+**4. `views/NotificationsView.vue` 死代码** —— 2026-09-26 修复
 
-列表每条帖子额外发 3 次查询（评论数、点赞数、最后评论时间），一页 10 条即 30+ 次往返。
+约 300 行、无路由无引用的遗留视图，已删除。
 
-修复方向：把三个统计改成对 `comments`、`likes` 的 `GROUP BY` 聚合子查询，一次 `outerjoin` 拿到；或用 `func.count` 的窗口函数。`get_topics_by_user()` 有同样的问题。
+**5. `highlight.js` 接线失效（marked v5+ 移除 `highlight` 选项）** —— 2026-09-26 修复
 
-### P2 — 维护性
+`marked.setOptions({ highlight })` 在 `marked@15` 下被静默忽略。已在 `TopicDetailView.vue` 改用 `marked.use({ renderer: { code({text, lang}) } })`，在自定义 renderer 里直接跑 hljs 并输出带 `hljs language-*` class 的 `<pre><code>`。注意 `TopicEditView` 的实时预览从未接 hljs，仍无高亮（历史行为，未改）。
 
-**4. `views/NotificationsView.vue` 是死代码**（约 300 行）。无路由、无引用，但仍在仓库中，容易被误读为活跃功能。
+**6. 三个 `@bytemd/*` 孤儿依赖** —— 2026-09-26 修复
 
-**5. `highlight.js` 引了但接线失效，代码块实际没有高亮。** `TopicDetailView.vue` 导入了 `hljs` 与 `github-dark` 主题样式，并调用 `marked.setOptions({ highlight(code, lang) {...} })`。但 `marked` 从 v5 起就移除了 `highlight` 选项（改为独立的 `marked-highlight` 插件），而本项目装的是 `marked@15.0.12`。已实测验证：传给 `setOptions` 的 `highlight` 被**静默忽略**，输出仍是朴素的 `<pre><code class="language-python">`，因此 `hljs` 与那行主题 CSS 都没起作用。
+`@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight`（ByteMD 是博客时期的编辑器，论坛改造后零引用）已从 `package.json` 移除并同步 lockfile，实测卸载 115 个包。
 
-修复方向：接入 `marked-highlight` 插件，或去掉 `setOptions`、改为在挂载后对渲染出的 DOM 调 `hljs.highlightElement()`。注意 `TopicEditView` 从未导入 `hljs`，它的实时预览也一直没有高亮。
-
-**6. 三个 `@bytemd/*` 依赖是博客时代的遗留物。** `package.json` 声明了 `@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight`，但 `src/` 中零引用。ByteMD 是博客时期的编辑器（`b70cb49` 引入），论坛改造（`6f2393a`）换成了 textarea + `marked`，依赖却没跟着清理。这三个包可以直接删。
+### 仍未解决
 
 **7. 无测试、无 linter。** 后端未接 pytest，前端未接 Vitest，也没有 flake8/black/eslint 配置。
-
-### P3 — 架构
 
 **8. 没有版本化迁移。** `ensure_schema()` 只做"加列不删列"的幂等变更，无法回滚、无法重命名列、无法改类型。字段变更累积到一定规模后需要引入 Alembic。
 

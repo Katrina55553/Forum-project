@@ -45,11 +45,11 @@ Task 2 的标题就是 `remove Tag`，设计文档第 2.7 节明确写着「`GET
 import { marked } from "marked";
 ```
 
-同时 `package.json` 没有被更新，于是 `@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight` 以及 `highlight.js` 四个依赖留在了清单里，`src/` 中零引用。这属于改造时漏做的收尾。
+同时 `package.json` 没有被更新，于是 `@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight` 三个依赖留在了清单里，`src/` 中零引用。这属于改造时漏做的收尾，直到 2026-09-26 才清理（`highlight.js` 仍被 `TopicDetailView.vue` 实际使用，不在清理之列）。
 
 ### 偏差 C — NotificationsView 先建后废
 
-Task 12 专门新建了 `NotificationsView.vue`。它确实上线过，但 15 天后（`6ae6ea4`，2026-05-31）通知与私信合并为统一收件箱 `/messages`，`/notifications` 变成重定向，该视图失去路由——文件却一直没删，至今仍留在 `views/` 中。
+Task 12 专门新建了 `NotificationsView.vue`。它确实上线过，但 15 天后（`6ae6ea4`，2026-05-31）通知与私信合并为统一收件箱 `/messages`，`/notifications` 变成重定向，该视图失去路由——文件却一直没删，直到 2026-09-26 才作为死代码清理掉。
 
 ### 偏差 D — 验证环节无痕迹
 
@@ -115,7 +115,7 @@ Task 15 要求端到端验证，但没有任何自动化测试留下，后续提
 | 设计文档的原始决策 | 当前实际 |
 | --- | --- |
 | 标签表删除、`GET /api/tags` 删除 | 标签功能完整存在，见偏差 A |
-| 编辑器用 ByteMD | textarea + marked + DOMPurify，ByteMD 依赖为孤儿 |
+| 编辑器用 ByteMD | textarea + marked + DOMPurify（ByteMD 孤儿依赖已于 2026-09-26 清理） |
 | 帖子管理无置顶 | 管理员可置顶 + 加精 |
 | 无版块、无用户间私信 | 新增完整私信系统与统一收件箱 |
 | — | 新增头像上传 |
@@ -124,10 +124,11 @@ Task 15 要求端到端验证，但没有任何自动化测试留下，后续提
 
 ## 6. 当前遗留问题
 
-完整清单见 `../specs/system-design.md` 第 7 节，其中影响最大的三项：
+完整清单见 `../specs/system-design.md` 第 7 节。2026-09-26 已集中修复以下历史欠账：
 
-1. **头像上传端点必然 500** —— 调用了不存在的 `imghdr.from_buffer()`，该功能从 `8601029` 引入起就没跑通过
-2. **`crud.get_topics()` 的 N+1 查询** —— 每页 10 条会额外发 30+ 次查询
-3. **`NotificationsView.vue` 死代码** —— 偏差 C 的残留
+1. ~~**头像上传端点必然 500**~~ —— 调用了不存在的 `imghdr.from_buffer()`，该功能从 `8601029` 引入起就没跑通过；已改为 `_detect_image_type()` 手动比对魔术字节
+2. ~~**`crud.get_topics()` / `get_topics_by_user()` 的 N+1 查询**~~ —— 每页 10 条曾额外发 30+ 次查询；已抽出 `_topic_stats()` 做 `GROUP BY` 聚合
+3. ~~**`NotificationsView.vue` 死代码**~~ —— 偏差 C 的残留，已删除
+4. ~~**`package.json` 中未使用的 `@bytemd/*` 依赖**~~（偏差 B）—— 已从依赖清单移除；`highlight.js` 因被 `TopicDetailView.vue` 实际使用而保留，其接线（marked v5+ 移除 `highlight` 选项导致静默失效）也在同日通过 `marked.use({ renderer })` 修复
 
-另有两项与本次改造直接相关的收尾欠账：`package.json` 中未使用的 ByteMD / highlight.js 依赖（偏差 B），以及完全没有测试与 linter（偏差 D）。
+仍遗留的主要是：完全没有测试与 linter（偏差 D）、无版本化迁移、`main.py` 未拆路由、楼中楼深度仅靠客户端限制。

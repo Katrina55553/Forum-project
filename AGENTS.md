@@ -149,7 +149,6 @@ frontend/src/
     ├── TopicEditView.vue    # Markdown 编辑（textarea + 实时预览）、标签输入、新建/编辑双模式
     ├── MessagesView.vue     # 统一收件箱：通知与私信按时间合并
     ├── ChatView.vue         # 私信会话，10s 轮询，Enter 发送
-    ├── NotificationsView.vue # 死代码 —— 未挂路由，/notifications 已重定向到 /messages
     ├── LoginView.vue        # 登录表单，支持 ?redirect=
     ├── RegisterView.vue     # 注册表单
     ├── UserProfile.vue      # 用户信息 + 统计 + TA 的帖子 + 「发私信」入口
@@ -209,24 +208,14 @@ frontend/src/
 
 ## 已知缺陷 / Known issues
 
-以下是当前代码树中**真实存在的缺陷**，不是设计取舍。
+以下是当前代码树中**真实存在的缺陷**，不是设计取舍。**截至 2026-09-26 上一轮清点出的 P1–P3 缺陷均已修复**（见下方修复记录），本节目前没有未解决的条目。
 
 > **2026-09-26 已修复的重要回归**：`backend/schemas.py` 曾缺 `Field` 导入（由 `6f521c6` 引入），导致 `import main` 抛 `NameError`、uvicorn 完全无法启动。已在导入行补上 `Field`，实测 `import main` 通过、`MessageCreate` 的长度校验生效。留此记录是因为它属于「给 Pydantic 模型加约束却忘了同步导入」的典型陷阱——加 `Field` / `conint` / `Annotated` 时记得检查导入行。
 
-### P1 —— 功能不可用
+### 2026-09-26 修复记录
 
-1. **`POST /api/upload/avatar` 必然 500。** `main.py` 调用 `imghdr.from_buffer(content)`，但 `imghdr` 模块只提供 `what(file, h=None)`，没有 `from_buffer`。已确认抛 `AttributeError`。另外 `imghdr` 自 3.11 起废弃、3.13 已被移除，所以 `what()` 也不是长久之计，正解是换 Pillow 或 `filetype`。`import imghdr` 写在处理函数**内部**，所以只在请求时报错、启动期不暴露。
-2. **`views/NotificationsView.vue` 是死代码**（约 300 行）。无路由、无引用，`/notifications` 重定向到 `/messages`。
-
-### P2 —— 性能
-
-3. **`crud.get_topics()` 是 N+1。** 每条帖子额外发 3 次查询（评论数、点赞数、最后评论），一页 10 条就是 30+ 次往返。应改成 `GROUP BY` 聚合子查询一次 `outerjoin` 拿到。
-4. **`get_topics_by_user()` 有同样的 N+1 形态**（每条帖子的评论数与点赞数）。
-
-### P3 —— 依赖与接线
-
-5. **`highlight.js` 引了，但接线是坏的——代码块实际没有高亮。** `TopicDetailView.vue` 里 `import hljs from "highlight.js"` 并引入 `github-dark` 主题 CSS，还调了 `marked.setOptions({ highlight(code, lang) { ... } })`。问题是 `marked` 从 **v5 起已移除 `highlight` 选项**（改由独立的 `marked-highlight` 插件承担），而本项目装的是 `marked@15.0.12`。已实测验证：`setOptions({ highlight })` 被**静默忽略**，输出仍是裸的 `<pre><code class="language-python">`，`hljs` 与主题 CSS 完全没起作用。
-
-   修法二选一：接入 `marked-highlight`，或去掉 `setOptions` 改为挂载后对渲染出的 DOM 调 `hljs.highlightElement()`。另注：`TopicEditView` 从未 import `hljs`，它的实时预览也一直没有高亮。
-
-6. **`@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight` 三个包在 `package.json` 里声明了，但 `src/` 中零引用。** ByteMD 是博客时期的编辑器（`b70cb49` 引入），论坛改造（`6f2393a`）时换成 textarea + `marked`，依赖没跟着清理。可以直接删掉这三个。
+1. **头像上传 500（imghdr）**：`main.py` 原来调不存在的 `imghdr.from_buffer()`（`imghdr` 在 Python 3.13 已移除）。已改为模块级 `_detect_image_type()`，按魔术字节识别 jpeg/png/gif/webp，不再依赖 imghdr / Pillow / filetype。
+2. **NotificationsView 死代码**：`views/NotificationsView.vue`（约 300 行，无路由无引用）已删除，`/notifications` 仍重定向到 `/messages`。
+3. **`get_topics()` / `get_topics_by_user()` N+1**：原来每条帖子额外发 3 次查询。已抽 `_topic_stats()` 用 `GROUP BY` 聚合批量拿评论数、点赞数、最后评论时间，一页从 30+ 次往返降到固定 3 次。
+4. **代码块高亮接线失效**：`marked` v5+ 移除了 `setOptions({highlight})`，原配置被静默忽略。已在 `TopicDetailView.vue` 改为 `marked.use({ renderer: { code({text, lang}) } })`，直接在 renderer 里跑 hljs 并输出带 `hljs language-*` class 的 `<pre><code>`。注：`TopicEditView` 的实时预览从未接 hljs，仍无高亮（历史行为，未改）。
+5. **`@bytemd/*` 孤儿依赖**：`@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight`（ByteMD 是博客时期编辑器的残留）已从 `package.json` 移除，`npm install` 实测卸载 115 个包、lockfile 已同步。
