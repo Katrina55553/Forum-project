@@ -31,6 +31,14 @@
 | 16 | 认证与用户页面 | [ch16-认证与用户页面.md](ch16-认证与用户页面.md) |
 | 17 | 评论与通知系统 | [ch17-评论与通知系统.md](ch17-评论与通知系统.md) |
 
+### 功能深化篇
+
+| 章节 | 主题 | 文件 |
+|:----:|------|------|
+| 18 | 标签系统 | [ch18-标签系统.md](ch18-标签系统.md) |
+| 19 | 私信与统一收件箱 | [ch19-私信与统一收件箱.md](ch19-私信与统一收件箱.md) |
+| 20 | 管理功能与文件上传 | [ch20-管理功能与文件上传.md](ch20-管理功能与文件上传.md) |
+
 ## 项目结构
 
 ```
@@ -50,7 +58,7 @@ forum-project/
 │       ├── main.js             # 应用入口
 │       ├── App.vue             # 根组件（导航栏、全局组件）
 │       ├── style.css           # 样式 + 主题变量
-│       ├── router/index.js     # 10 条路由 + 导航守卫
+│       ├── router/index.js     # 12 条路由 + 导航守卫
 │       ├── stores/auth.js      # Pinia 认证状态
 │       ├── api/                # Axios API 调用层
 │       ├── components/         # 全局组件
@@ -61,13 +69,20 @@ forum-project/
 
 ## 代码量统计
 
+实测（`wc -l`）：后端 7 个 Python 文件共 **1,496 行**，前端共 **5,597 行**。
+
 | 后端 | 行数 | 前端 | 行数 |
 |:-----|:---:|:-----|:---:|
-| main.py | ~260 | 视图 (9个) | ~1,592 |
-| crud.py | ~215 | App.vue | ~390 |
-| schemas.py | ~105 | 组件 (4个) | ~398 |
-| models.py | ~65 | router + store | ~138 |
-| auth.py | ~55 | api (7个) | ~126 |
-| database.py | ~40 | composables (2个) | ~46 |
-| seed.py | ~25 | main.js + style.css | ~101 |
-| **后端总计** | **~770** | **前端总计** | **~2,791** |
+| crud.py | 494 | 视图 (11个) | 3,721 |
+| main.py | 475 | App.vue | 587 |
+| schemas.py | 203 | 组件 (5个) | 734 |
+| models.py | 134 | router + store | 146 |
+| auth.py | 90 | api (10个) | 170 |
+| database.py | 62 | composables (2个) | 48 |
+| seed.py | 38 | main.js + style.css | 191 |
+| **后端总计** | **1,496** | **前端总计** | **5,597** |
+
+> 三点说明：
+> - 视图 11 个中含已无路由、无引用的 `NotificationsView.vue`（307 行，见第十七、十九章）
+> - api 10 个中含 axios 实例封装 `client.js`
+> - `models.py` 定义 users / topics / comments / notifications / messages / tags 6 张模型表 + likes / topic_tags 2 张关联表

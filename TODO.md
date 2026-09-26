@@ -3,7 +3,7 @@
 ## P0 — 高优先级（立即推进）
 
 ### 内容与体验
-- [x] 帖子 Markdown 编辑器（ByteMD 分栏预览 + 实时渲染）
+- [x] 帖子 Markdown 编辑器（textarea + 分栏实时预览；原计划的 ByteMD 未落地，依赖残留在 package.json）
 - [x] Toast 消息提示（替代 alert）
 - [x] 回到顶部按钮
 - [x] 评论嵌套回复（楼中楼，展示回复对象）
