@@ -83,6 +83,31 @@ def _escape_like(s: str) -> str:
     return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _topic_stats(db: Session, topic_ids: list[int]):
+    """批量统计一组帖子的评论数、点赞数、最后评论时间（3 次聚合查询，避免逐条 N+1）。"""
+    if not topic_ids:
+        return {}, {}, {}
+    comment_counts = dict(
+        db.query(Comment.topic_id, func.count(Comment.id))
+        .filter(Comment.topic_id.in_(topic_ids))
+        .group_by(Comment.topic_id)
+        .all()
+    )
+    like_counts = dict(
+        db.query(likes.c.topic_id, func.count(likes.c.user_id))
+        .filter(likes.c.topic_id.in_(topic_ids))
+        .group_by(likes.c.topic_id)
+        .all()
+    )
+    last_comment_at = dict(
+        db.query(Comment.topic_id, func.max(Comment.created_at))
+        .filter(Comment.topic_id.in_(topic_ids))
+        .group_by(Comment.topic_id)
+        .all()
+    )
+    return comment_counts, like_counts, last_comment_at
+
+
 def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str = ""):
     # 先用简单查询计数（避免 joinedload 导致 count 膨胀）
     count_query = db.query(Topic)
@@ -116,21 +141,17 @@ def get_topics(db: Session, page: int = 1, size: int = 10, q: str = "", tag: str
         .limit(size)
         .all()
     )
+    comment_counts, like_counts, last_comment_at = _topic_stats(db, [t.id for t in topics])
     result = []
     for t in topics:
-        comment_count = db.query(func.count(Comment.id)).filter_by(topic_id=t.id).scalar()
-        like_count = db.query(func.count(likes.c.user_id)).filter(likes.c.topic_id == t.id).scalar()
-        last_comment = (
-            db.query(Comment).filter_by(topic_id=t.id).order_by(Comment.created_at.desc()).first()
-        )
         result.append({
             "id": t.id,
             "title": t.title,
             "author": {"id": t.author.id, "username": t.author.username, "avatar": t.author.avatar} if t.author else None,
             "view_count": t.view_count,
-            "comment_count": comment_count,
-            "likes_count": like_count,
-            "last_comment_at": last_comment.created_at if last_comment else None,
+            "comment_count": comment_counts.get(t.id, 0),
+            "likes_count": like_counts.get(t.id, 0),
+            "last_comment_at": last_comment_at.get(t.id),
             "tags": [{"id": tag.id, "name": tag.name, "slug": tag.slug} for tag in t.tags],
             "created_at": t.created_at,
             "is_pinned": t.is_pinned,
@@ -166,17 +187,16 @@ def get_topics_by_user(db: Session, user_id: int, page: int = 1, size: int = 10)
         .limit(size)
         .all()
     )
+    comment_counts, like_counts, _ = _topic_stats(db, [t.id for t in topics])
     result = []
     for t in topics:
-        comment_count = db.query(func.count(Comment.id)).filter_by(topic_id=t.id).scalar()
-        like_count = db.query(func.count(likes.c.user_id)).filter(likes.c.topic_id == t.id).scalar()
         result.append({
             "id": t.id,
             "title": t.title,
             "author": {"id": t.author.id, "username": t.author.username, "avatar": t.author.avatar} if t.author else None,
             "view_count": t.view_count,
-            "comment_count": comment_count,
-            "likes_count": like_count,
+            "comment_count": comment_counts.get(t.id, 0),
+            "likes_count": like_counts.get(t.id, 0),
             "last_comment_at": None,
             "created_at": t.created_at,
         })

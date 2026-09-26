@@ -54,12 +54,17 @@ async function handleLike() {
   }
 }
 
-marked.setOptions({
-  highlight(code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      return hljs.highlight(code, { language: lang }).value;
-    }
-    return hljs.highlightAuto(code).value;
+// marked v5+ 移除了 setOptions({highlight})，改用自定义 renderer 接管代码块渲染
+marked.use({
+  renderer: {
+    code({ text, lang }) {
+      const language = lang && hljs.getLanguage(lang) ? lang : null;
+      const highlighted = language
+        ? hljs.highlight(text, { language }).value
+        : hljs.highlightAuto(text).value;
+      const cls = language ? `hljs language-${language}` : "hljs";
+      return `<pre><code class="${cls}">${highlighted}</code></pre>\n`;
+    },
   },
 });
 

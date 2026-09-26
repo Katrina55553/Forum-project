@@ -152,6 +152,19 @@ def sanitize(text: str) -> str:
                         protocols=["http", "https", "mailto"], strip=True)
 
 
+def _detect_image_type(content: bytes) -> str | None:
+    """按魔术字节识别图片类型（替代 Python 3.13 已移除的 imghdr）。"""
+    if content.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if content.startswith((b"GIF87a", b"GIF89a")):
+        return "gif"
+    if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
 def _author_or_admin(topic: Topic, user: User):
     if topic.author_id != user.id and not user.is_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your topic")
@@ -186,8 +199,7 @@ async def upload_avatar(
         raise HTTPException(status_code=400, detail="文件大小不能超过 2MB")
 
     # 验证文件魔术字节，防止伪造 content-type
-    import imghdr
-    detected = imghdr.from_buffer(content)
+    detected = _detect_image_type(content)
     if detected not in ("jpeg", "png", "gif", "webp"):
         raise HTTPException(status_code=400, detail="文件内容不是有效图片")
 
