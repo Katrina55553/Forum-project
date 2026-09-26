@@ -84,6 +84,8 @@ UPLOAD_DIR = "uploads"
 AVATAR_DIR = os.path.join(UPLOAD_DIR, "avatars")
 MAX_AVATAR_SIZE = 2 * 1024 * 1024  # 2MB
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+# 落盘扩展名由检测出的真实格式决定，不信任用户文件名
+EXT_BY_TYPE = {"jpeg": ".jpg", "png": ".png", "gif": ".gif", "webp": ".webp"}
 
 
 @asynccontextmanager
@@ -203,8 +205,7 @@ async def upload_avatar(
     if detected not in ("jpeg", "png", "gif", "webp"):
         raise HTTPException(status_code=400, detail="文件内容不是有效图片")
 
-    ext = os.path.splitext(file.filename)[1] if file.filename else ".jpg"
-    filename = f"{uuid.uuid4()}{ext}"
+    filename = f"{uuid.uuid4()}{EXT_BY_TYPE[detected]}"
     filepath = os.path.join(AVATAR_DIR, filename)
 
     with open(filepath, "wb") as f:

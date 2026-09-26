@@ -3,8 +3,39 @@ import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
-import hljs from "highlight.js";
+// 用 core + 按需注册语言，避免全量入口把约 190 种语言打进 chunk（980 kB → 几十 kB）
+import hljs from "highlight.js/lib/core";
+import javascript from "highlight.js/lib/languages/javascript";
+import typescript from "highlight.js/lib/languages/typescript";
+import python from "highlight.js/lib/languages/python";
+import bash from "highlight.js/lib/languages/bash";
+import json from "highlight.js/lib/languages/json";
+import yaml from "highlight.js/lib/languages/yaml";
+import xml from "highlight.js/lib/languages/xml";
+import css from "highlight.js/lib/languages/css";
+import markdown from "highlight.js/lib/languages/markdown";
+import sql from "highlight.js/lib/languages/sql";
+import java from "highlight.js/lib/languages/java";
+import c from "highlight.js/lib/languages/c";
+import cpp from "highlight.js/lib/languages/cpp";
+import csharp from "highlight.js/lib/languages/csharp";
+import go from "highlight.js/lib/languages/go";
+import rust from "highlight.js/lib/languages/rust";
+import php from "highlight.js/lib/languages/php";
+import ruby from "highlight.js/lib/languages/ruby";
+import diff from "highlight.js/lib/languages/diff";
+import dockerfile from "highlight.js/lib/languages/dockerfile";
+import ini from "highlight.js/lib/languages/ini";
+import kotlin from "highlight.js/lib/languages/kotlin";
+import swift from "highlight.js/lib/languages/swift";
 import "highlight.js/styles/github-dark.css";
+
+for (const [name, mod] of Object.entries({
+  javascript, typescript, python, bash, json, yaml, xml, css, markdown, sql,
+  java, c, cpp, csharp, go, rust, php, ruby, diff, dockerfile, ini, kotlin, swift,
+})) {
+  hljs.registerLanguage(name, mod);
+}
 import { getTopicById, deleteTopic, pinTopic, featureTopic } from "../api/topic";
 import { createComment } from "../api/comment";
 import { likeTopic, unlikeTopic } from "../api/like";
