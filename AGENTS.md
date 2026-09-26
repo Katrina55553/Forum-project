@@ -204,11 +204,11 @@ frontend/src/
 - CORS origin 由 `CORS_ORIGIN` 环境变量控制，默认 `localhost:5173`。
 - `get_current_user` 里把 JWT 的 `sub` 显式转成 `int`，避免类型不匹配。
 - 通知的外键在数据库层 CASCADE 删除：删帖/删评论会自动清掉相关通知。
-- 头像上传校验声明的 content-type、大小（≤2MB）与图片魔术字节，并以 UUID 重命名落盘。
+- 头像上传校验声明的 content-type、大小（≤2MB）与图片魔术字节，以 UUID 重命名落盘，且扩展名由检测出的真实格式决定（`EXT_BY_TYPE[detected]`，不信 `file.filename`）。
 
 ## 已知缺陷 / Known issues
 
-以下是当前代码树中**真实存在的缺陷**，不是设计取舍。**截至 2026-09-26 上一轮清点出的 P1–P3 缺陷均已修复**（见下方修复记录），本节目前没有未解决的条目。
+以下是当前代码树中**真实存在的缺陷**，不是设计取舍。**截至 2026-09-26 清点出的 P0–P3 缺陷均已修复**（见下方修复记录），本节下方另列仍未解决的项。
 
 > **2026-09-26 已修复的重要回归**：`backend/schemas.py` 曾缺 `Field` 导入（由 `6f521c6` 引入），导致 `import main` 抛 `NameError`、uvicorn 完全无法启动。已在导入行补上 `Field`，实测 `import main` 通过、`MessageCreate` 的长度校验生效。留此记录是因为它属于「给 Pydantic 模型加约束却忘了同步导入」的典型陷阱——加 `Field` / `conint` / `Annotated` 时记得检查导入行。
 
@@ -216,6 +216,15 @@ frontend/src/
 
 1. **头像上传 500（imghdr）**：`main.py` 原来调不存在的 `imghdr.from_buffer()`（`imghdr` 在 Python 3.13 已移除）。已改为模块级 `_detect_image_type()`，按魔术字节识别 jpeg/png/gif/webp，不再依赖 imghdr / Pillow / filetype。
 2. **NotificationsView 死代码**：`views/NotificationsView.vue`（约 300 行，无路由无引用）已删除，`/notifications` 仍重定向到 `/messages`。
-3. **`get_topics()` / `get_topics_by_user()` N+1**：原来每条帖子额外发 3 次查询。已抽 `_topic_stats()` 用 `GROUP BY` 聚合批量拿评论数、点赞数、最后评论时间，一页从 30+ 次往返降到固定 3 次。
+3. **`get_topics()` / `get_topics_by_user()` N+1**：原来每条帖子额外发 3 次查询。已抽 `_topic_stats()` 用 `GROUP BY` 聚合批量拿评论数、点赞数、最后评论时间。实测：一页 10 条从 32 次查询降到 5 次（其中统计部分固定 3 次），且不随页大小增长。
 4. **代码块高亮接线失效**：`marked` v5+ 移除了 `setOptions({highlight})`，原配置被静默忽略。已在 `TopicDetailView.vue` 改为 `marked.use({ renderer: { code({text, lang}) } })`，直接在 renderer 里跑 hljs 并输出带 `hljs language-*` class 的 `<pre><code>`。注：`TopicEditView` 的实时预览从未接 hljs，仍无高亮（历史行为，未改）。
 5. **`@bytemd/*` 孤儿依赖**：`@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight`（ByteMD 是博客时期编辑器的残留）已从 `package.json` 移除，`npm install` 实测卸载 115 个包、lockfile 已同步。
+6. **头像落盘扩展名取自用户文件名**：`upload_avatar` 原来用 `ext = os.path.splitext(file.filename)[1]`，「真实 PNG 内容 + `avatar.html` 文件名」会让 `StaticFiles` 以 `text/html` 返回。已改为 `filename = f"{uuid.uuid4()}{EXT_BY_TYPE[detected]}"`（`EXT_BY_TYPE` 定义在 `main.py` 上传配置处），扩展名由检测结果决定、不再问用户。
+7. **`TopicDetailView` chunk 980 kB（gzip 316 kB）**：根因是 `import hljs from "highlight.js"` 走全量入口把约 190 种语言全打进包。已改用 `highlight.js/lib/core` + 按需 `registerLanguage()` 23 种常用语言，实测 chunk 降到 **123.77 kB（gzip 39.59 kB）**，不再触发 500 kB 警告。注：`github-dark.css` 主题是硬编码的，在默认「暖纸」亮色主题下代码块仍为深色（样式取舍，未改）。
+
+### 仍未解决
+
+8. **无测试、无 linter**：后端未接 pytest，前端未接 Vitest，也没有 flake8/black/eslint 配置。改动后靠手工冒烟（`import main` + `vite build`）。
+9. **没有版本化迁移**：`ensure_schema()` 只做「加列不删列」的幂等变更，无法回滚/重命名/改类型，累积到一定规模需引入 Alembic。
+10. **`main.py` 承载全部 29 个路由**（约 480 行）：按领域拆 `routers/` 下的 `APIRouter` 是自然的下一步。
+11. **楼中楼深度只在客户端设限**：`CommentItem.vue` 用 `depth < 10` 停止渲染，后端不校验 `parent_id` 深度，超 10 层的回复能入库却看不到。

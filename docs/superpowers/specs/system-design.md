@@ -340,7 +340,7 @@ JWT 的 `sub` 声明写入时是 `str(user.id)`，读出时显式 `int()` 转换
 
 ### 文件上传
 
-头像上传的限制逐层收紧：声明 content-type 在白名单 → 读取字节数 ≤2MB → 校验图片魔术字节 → 以 UUID 重命名落盘（避免原始文件名带来的路径穿越与覆盖）。文件存 `backend/uploads/avatars/`，通过 `app.mount("/uploads", StaticFiles(...))` 静态托管，nginx 与 vite 各自反代该前缀。
+头像上传的限制逐层收紧：声明 content-type 在白名单 → 读取字节数 ≤2MB → 校验图片魔术字节 → 以 UUID 重命名落盘（避免原始文件名带来的路径穿越与覆盖，**扩展名也由检测出的真实格式决定**：`EXT_BY_TYPE[detected]`，不信任 `file.filename`）。文件存 `backend/uploads/avatars/`，通过 `app.mount("/uploads", StaticFiles(...))` 静态托管，nginx 与 vite 各自反代该前缀。
 
 > 魔术字节校验由 `main.py` 的 `_detect_image_type()` 实现（jpeg/png/gif/webp 的文件头比对）。早期版本误用了不存在的 `imghdr.from_buffer()` 导致端点必然 500，2026-09-26 已改为纯手动识别，不再依赖 `imghdr`（该模块在 Python 3.13 已移除）。
 
@@ -388,7 +388,7 @@ from pydantic import BaseModel, Field, field_validator
 
 **3. `get_topics()` / `get_topics_by_user()` 的 N+1 查询** —— 2026-09-26 修复
 
-列表原来每条帖子额外发 3 次查询（评论数、点赞数、最后评论时间），一页 10 条即 30+ 次往返。已抽出 `crud._topic_stats()`，对 `comments`、`likes` 做 `GROUP BY` 聚合批量查询，一页固定 3 次往返。
+列表原来每条帖子额外发 3 次查询（评论数、点赞数、最后评论时间），一页 10 条即 30+ 次往返。已抽出 `crud._topic_stats()`，对 `comments`、`likes` 做 `GROUP BY` 聚合批量查询。实测一页 10 条从 **32 次查询降到 5 次**（计数 1 + 取数 1 + 统计 3），且不随页大小增长。
 
 **4. `views/NotificationsView.vue` 死代码** —— 2026-09-26 修复
 
@@ -402,12 +402,20 @@ from pydantic import BaseModel, Field, field_validator
 
 `@bytemd/vue-next`、`@bytemd/plugin-gfm`、`@bytemd/plugin-highlight`（ByteMD 是博客时期的编辑器，论坛改造后零引用）已从 `package.json` 移除并同步 lockfile，实测卸载 115 个包。
 
+**7. 头像落盘扩展名取自用户文件名** —— 2026-09-26 修复
+
+`upload_avatar` 原来用 `ext = os.path.splitext(file.filename)[1]`，「真实 PNG 内容 + `avatar.html` 文件名」会让 `StaticFiles` 以 `text/html` 返回该文件（内容是真图片所以无法直接执行脚本，但响应头状态本身不该存在）。已改为 `filename = f"{uuid.uuid4()}{EXT_BY_TYPE[detected]}"`，扩展名由检测出的真实格式决定。这是第 2 项修复的跟进——同一个函数里"因为 500 而没暴露"的第二个问题。
+
+**8. `TopicDetailView` 的 chunk 达 980 kB（gzip 316 kB）** —— 2026-09-26 修复
+
+根因是 `import hljs from "highlight.js"` 走全量入口，把约 190 种语言全部打包，`vite build` 会报超 500 kB 警告。已改用 `highlight.js/lib/core` + 按需 `registerLanguage()` 23 种常用语言，实测 chunk 降到 **123.77 kB（gzip 39.59 kB）**。注：`github-dark.css` 主题硬编码，亮色主题下代码块仍为深色（样式取舍，未改）。
+
 ### 仍未解决
 
-**7. 无测试、无 linter。** 后端未接 pytest，前端未接 Vitest，也没有 flake8/black/eslint 配置。
+**9. 无测试、无 linter。** 后端未接 pytest，前端未接 Vitest，也没有 flake8/black/eslint 配置。
 
-**8. 没有版本化迁移。** `ensure_schema()` 只做"加列不删列"的幂等变更，无法回滚、无法重命名列、无法改类型。字段变更累积到一定规模后需要引入 Alembic。
+**10. 没有版本化迁移。** `ensure_schema()` 只做"加列不删列"的幂等变更，无法回滚、无法重命名列、无法改类型。字段变更累积到一定规模后需要引入 Alembic。
 
-**9. `main.py` 承载全部 29 个路由**，已近 500 行。按领域拆分成 `routers/` 下的 `APIRouter` 是自然的下一步。
+**11. `main.py` 承载全部 29 个路由**，已近 500 行。按领域拆分成 `routers/` 下的 `APIRouter` 是自然的下一步。
 
-**10. 楼中楼深度只在客户端设限。** `CommentItem.vue` 用 `depth < 10` 停止递归渲染，但后端 `create_comment` 不校验层级，`parent_id` 可以指向任意深度的评论。也就是说深度超过 10 层的回复能成功写入数据库，却在界面上永远看不到——数据与视图不一致。若要彻底解决，应在写入侧限制 `parent_id` 的深度，或改为超过阈值后平铺展示并标注"回复 @某人"。
+**12. 楼中楼深度只在客户端设限。** `CommentItem.vue` 用 `depth < 10` 停止递归渲染，但后端 `create_comment` 不校验层级，`parent_id` 可以指向任意深度的评论。也就是说深度超过 10 层的回复能成功写入数据库，却在界面上永远看不到——数据与视图不一致。若要彻底解决，应在写入侧限制 `parent_id` 的深度，或改为超过阈值后平铺展示并标注"回复 @某人"。
