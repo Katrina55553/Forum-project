@@ -316,7 +316,12 @@ def get_topic_for_edit_route(topic_id: int, current_user: User = Depends(get_cur
     if not topic:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Topic not found")
     _author_or_admin(topic, current_user)
-    return {"id": topic.id, "title": topic.title, "content": topic.content}
+    return {
+        "id": topic.id,
+        "title": topic.title,
+        "content": topic.content,
+        "tags": [{"id": t.id, "name": t.name, "slug": t.slug} for t in topic.tags],
+    }
 
 
 @app.put("/api/topics/{topic_id}", response_model=TopicDetailResponse)

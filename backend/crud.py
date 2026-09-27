@@ -274,6 +274,8 @@ def create_comment(db: Session, user_id: int, topic_id: int, content: str, paren
             raise ValueError("Parent comment not found under this topic")
     comment = Comment(content=content, topic_id=topic_id, user_id=user_id, parent_id=parent_id)
     db.add(comment)
+    # autoflush=False，需先 flush 拿到 comment.id，否则下方通知的 comment_id 会存成 NULL
+    db.flush()
     db.query(User).filter_by(id=user_id).update({"comment_count": User.comment_count + 1})
 
     # Notify topic author (don't self-notify)
@@ -474,11 +476,13 @@ def get_messages_with_user(db: Session, user_id: int, other_username: str, page:
     )
     total = query.count()
     messages = (
-        query.order_by(Message.created_at.asc())
+        # 按新到旧取当前页，再反转为旧到新，保证 page=1 拿到的是最新消息
+        query.order_by(Message.id.desc())
         .offset((page - 1) * size)
         .limit(size)
         .all()
     )
+    messages = list(reversed(messages))
     return {
         "messages": [
             {
