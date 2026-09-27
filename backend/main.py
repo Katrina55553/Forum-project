@@ -69,7 +69,7 @@ from schemas import (
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("blog")
+logger = logging.getLogger("forum")
 
 ALLOWED_TAGS = ["b", "i", "em", "strong", "a", "p", "br", "ul", "ol", "li",
                 "pre", "code", "h1", "h2", "h3", "h4", "h5", "h6",

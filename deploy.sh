@@ -1,10 +1,10 @@
 #!/bin/bash
-# Blog project deployment script
+# Forum project deployment script
 # Usage: ./deploy.sh
 
 set -e
 
-echo "Deploying Blog Project..."
+echo "Deploying Forum Project..."
 
 # Generate random passwords if not set
 if [ ! -f .env ]; then

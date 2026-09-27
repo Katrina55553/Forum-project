@@ -3,13 +3,13 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=blog
+      - POSTGRES_USER=forum
       - POSTGRES_PASSWORD=${DB_PASSWORD:-change-me}
-      - POSTGRES_DB=blog
+      - POSTGRES_DB=forum
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blog"]
+      test: ["CMD-SHELL", "pg_isready -U forum"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -20,7 +20,7 @@ services:
     environment:
       - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
       - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
-      - DATABASE_URL=postgresql://blog:${DB_PASSWORD:-change-me}@db:5432/blog
+      - DATABASE_URL=postgresql://forum:${DB_PASSWORD:-change-me}@db:5432/forum
     volumes:
       - ./backend/uploads:/app/uploads
     depends_on:

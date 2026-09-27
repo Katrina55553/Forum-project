@@ -8,8 +8,6 @@
 
 一个极简社区论坛系统，品牌名 **Inkwell**。全栈实现：Vue 3 前端 + FastAPI 后端 + PostgreSQL + JWT 认证 + Docker 部署。
 
-它是从一个**个人技术博客渐进改造**而来，因此数据库名与容器用户名仍叫 `blog`，`docs/superpowers/` 保留着改造过程记录——**不要"顺手"把这些历史命名重命名掉**。
-
 当前功能集：帖子、标签、楼中楼评论、点赞、回复通知、私信、管理员置顶/加精、头像上传。
 
 ## 命令 / Commands
@@ -54,7 +52,6 @@ backend/
 ├── crud.py          # 纯数据库操作（不掺 HTTP 逻辑）+ build_comment_tree()
 ├── auth.py          # bcrypt 哈希、JWT 签发/校验、get_current_user / get_optional_user / require_admin
 ├── database.py      # SQLAlchemy engine、SessionLocal、Base、ensure_schema()
-├── migrations/      # 001_blog_to_forum.sql（历史一次性脚本，非日常迁移手段）
 ├── seed.py          # 幂等测试数据
 ├── uploads/avatars/ # 运行时创建的头像存储，经 /uploads 静态托管
 └── requirements.txt
@@ -177,7 +174,7 @@ frontend/src/
 
 ## 数据库 / Database
 
-开发与生产都用 PostgreSQL。默认连接串 `postgresql://blog:blog@localhost:5432/blog`。
+开发与生产都用 PostgreSQL。默认连接串 `postgresql://forum:forum@localhost:5432/forum`。
 
 `ensure_schema()` 在启动时执行三件事：尝试 `GRANT CREATE ON SCHEMA public`（云数据库上会失败，只记 warning）→ `Base.metadata.create_all()` → 逐条执行 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` 补 `comments.parent_id`、`topics.is_pinned`、`topics.is_featured`。
 

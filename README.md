@@ -4,8 +4,6 @@ A minimalist, high-performance community forum powered by **Vue 3** + **FastAPI*
 
 基于 **Vue 3** + **FastAPI** 的极简社区论坛，支持标签、楼中楼评论、私信、通知与管理员置顶/加精。
 
-> 项目代号仍保留 `blog`（数据库名、容器用户名），因为它是从个人技术博客渐进改造而来。改造过程见 `docs/superpowers/`。
-
 ## Tech Stack / 技术栈
 
 | Layer 层 | Technology 技术 |
@@ -124,7 +122,6 @@ forum-project/
 │   ├── auth.py          # bcrypt、JWT、get_current_user / get_optional_user / require_admin
 │   ├── database.py      # engine、SessionLocal、Base、ensure_schema()
 │   ├── seed.py          # 幂等测试数据
-│   ├── migrations/      # 001_blog_to_forum.sql（历史迁移脚本）
 │   ├── uploads/avatars/ # 头像存储（运行时创建，已 gitignore）
 │   └── requirements.txt
 ├── frontend/
@@ -139,8 +136,6 @@ forum-project/
 │   │   └── views/       # 11 个页面
 │   ├── nginx.conf       # 生产 SPA 回退 + /api 与 /uploads 反代
 │   └── vite.config.js   # dev 代理 /api 与 /uploads → :8000
-├── docs/superpowers/    # 系统设计与实施记录
-├── ebook/               # 20 章配套教程
 ├── docker-compose.yml   # PostgreSQL 16 + backend + frontend
 ├── deploy.sh            # 一键部署（生成 .env → 构建 → seed）
 └── .env.example

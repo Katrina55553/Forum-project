@@ -6,7 +6,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL as EngineURL
 from sqlalchemy.orm import Session, sessionmaker, DeclarativeBase
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://blog:blog@localhost:5432/blog")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://forum:forum@localhost:5432/forum")
 
 _parsed = urlparse(DATABASE_URL)
 
@@ -16,7 +16,7 @@ engine_url = EngineURL.create(
     password=unquote(_parsed.password) if _parsed.password else None,
     host=_parsed.hostname,
     port=_parsed.port,
-    database=_parsed.path.lstrip("/") or "blog",
+    database=_parsed.path.lstrip("/") or "forum",
 )
 
 engine = create_engine(engine_url, connect_args={"client_encoding": "utf8"})
@@ -36,7 +36,7 @@ def ensure_schema():
             conn.execute(text("GRANT CREATE ON SCHEMA public TO CURRENT_USER"))
     except Exception:
         import logging
-        logging.getLogger("blog").warning(
+        logging.getLogger("forum").warning(
             "无法在 public schema 上授权 CREATE（云数据库通常已预先配置好权限），跳过"
         )
 
